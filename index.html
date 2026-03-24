@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvTrack — Inventory Management System</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- QR Code Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════ */
+:root {
+  --bg:          #0d0f14;
+  --surface:     #141720;
+  --surface2:    #1c2030;
+  --border:      rgba(255,255,255,0.07);
+  --border2:     rgba(255,255,255,0.13);
+  --text:        #e8eaf2;
+  --text-muted:  #666d85;
+  --text-dim:    #9099b5;
+  --accent:      #4f8ef7;
+  --accent2:     #7c5cbf;
+  --gold:        #f0b429;
+  --green:       #34d399;
+  --red:         #f87171;
+  --orange:      #fb923c;
+  --radius:      12px;
+  --radius-sm:   8px;
+  --sidebar-w:   260px;
+  --header-h:    64px;
+  --shadow:      0 4px 24px rgba(0,0,0,0.4);
+  --font-head:   'Syne', sans-serif;
+  --font-body:   'Inter', sans-serif;
+  --font-mono:   'DM Mono', monospace;
+  --transition:  all 0.2s ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════════════════ */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79,142,247,0.18) 0%, transparent 70%),
+              radial-gradient(ellipse 50% 40% at 80% 100%, rgba(124,92,191,0.12) 0%, transparent 60%),
+              var(--bg);
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 48px 40px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  animation: fadeUp 0.5s ease;
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.login-logo .logo-mark {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  margin-bottom: 16px;
+  box-shadow: 0 0 40px rgba(79,142,247,0.35);
+}
+
+.login-logo h1 {
+  font-family: var(--font-head);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #e8eaf2, var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.login-logo p { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.15);
+}
+
+.form-group select option { background: var(--surface2); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--radius-sm);
+  border: none; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #3b6fd4);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(79,142,247,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(79,142,247,0.45); }
+
+.btn-ghost {
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border2);
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+.btn-danger { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+.btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+.btn-success { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+.btn-success:hover { background: rgba(52,211,153,0.25); }
+
+.btn-gold { background: rgba(240,180,41,0.15); color: var(--gold); border: 1px solid rgba(240,180,41,0.3); }
+.btn-gold:hover { background: rgba(240,180,41,0.25); }
+
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+.btn-lg { padding: 14px 28px; font-size: 15px; }
+
+.login-error {
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════════ */
+#appShell { display: none; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  position: fixed; top: 0; left: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 100;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-logo {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+
+.sidebar-logo .logo-mark-sm {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo h2 {
+  font-family: var(--font-head); font-size: 18px; font-weight: 800;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, var(--text), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+.nav-section { margin-bottom: 24px; }
+.nav-section-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); padding: 0 8px; margin-bottom: 8px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 13px; font-weight: 500;
+  margin-bottom: 2px;
+  user-select: none;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(79,142,247,0.15); color: var(--accent); }
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.user-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+
+.user-avatar {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  flex-shrink: 0;
+  color: white;
+}
+
+.user-info h4 { font-size: 13px; font-weight: 600; }
+.user-info p  { font-size: 11px; color: var(--text-muted); }
+
+/* MAIN CONTENT */
+.main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+.topbar {
+  height: var(--header-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky; top: 0; z-index: 90;
+}
+
+.topbar h1 {
+  font-family: var(--font-head);
+  font-size: 20px; font-weight: 700;
+  flex: 1;
+}
+
+.content { flex: 1; padding: 28px; }
+
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+.stat-icon {
+  font-size: 24px; margin-bottom: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px;
+  background: var(--surface2);
+  border-radius: 12px;
+}
+
+.stat-value {
+  font-family: var(--font-head);
+  font-size: 32px; font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══════════════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════════════ */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; gap: 10px;
+}
+
+.table-header h3 { font-family: var(--font-head); font-size: 16px; font-weight: 700; flex: 1; min-width: 120px; }
+
+.search-box {
+  display: flex; align-items: center;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px; gap: 8px;
+}
+
+.search-box input {
+  background: none; border: none; outline: none;
+  color: var(--text); font-family: var(--font-body); font-size: 13px;
+  width: 200px;
+}
+
+.search-box input::placeholder { color: var(--text-muted); }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  background: rgba(255,255,255,0.03);
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.data-table .col-id { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+}
+
+.badge-fixed  { background: rgba(240,180,41,0.15); color: var(--gold); }
+.badge-semi   { background: rgba(79,142,247,0.15); color: var(--accent); }
+.badge-admin  { background: rgba(124,92,191,0.15); color: #a78bfa; }
+.badge-user   { background: rgba(52,211,153,0.15); color: var(--green); }
+.badge-auth   { background: rgba(251,146,60,0.15); color: var(--orange); }
+
+.action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ═══════════════════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  width: 100%; max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.2s ease;
+}
+
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+.modal.modal-lg { max-width: 900px; }
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 24px 28px 0;
+}
+
+.modal-header h2 { font-family: var(--font-head); font-size: 20px; font-weight: 700; }
+
+.modal-body { padding: 24px 28px; }
+.modal-footer { padding: 0 28px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid .full { grid-column: 1 / -1; }
+
+.close-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; cursor: pointer; color: var(--text-muted);
+  font-size: 18px; line-height: 1;
+  transition: var(--transition);
+}
+.close-btn:hover { background: var(--border2); color: var(--text); }
+
+/* ═══════════════════════════════════════════════════════
+   ITEM DETAIL / QR VIEW
+═══════════════════════════════════════════════════════ */
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+}
+
+.detail-field {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-field:nth-child(odd) { padding-right: 20px; }
+.detail-field:nth-child(even) { padding-left: 20px; border-left: 1px solid var(--border); }
+
+.detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+.detail-value { font-size: 14px; color: var(--text); font-weight: 500; }
+
+.qr-container {
+  text-align: center;
+  padding: 24px;
+  background: white;
+  border-radius: var(--radius);
+  display: inline-block;
+}
+
+/* ═══════════════════════════════════════════════════════
+   REPORTS
+═══════════════════════════════════════════════════════ */
+.filter-bar {
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.filter-bar .form-group { margin: 0; }
+.filter-bar .form-group input,
+.filter-bar .form-group select { min-width: 150px; }
+
+/* ═══════════════════════════════════════════════════════
+   LOADING / TOAST
+═══════════════════════════════════════════════════════ */
+.loader {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.toast-container {
+  position: fixed; top: 20px; right: 20px;
+  z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+}
+
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+  animation: slideIn 0.3s ease;
+  max-width: 320px;
+}
+
+.toast.success { border-color: rgba(52,211,153,0.4); }
+.toast.error   { border-color: rgba(248,113,113,0.4); }
+.toast.info    { border-color: rgba(79,142,247,0.4); }
+
+/* ═══════════════════════════════════════════════════════
+   CART / SELECTED ITEMS
+═══════════════════════════════════════════════════════ */
+.cart-badge {
+  background: var(--red);
+  color: white;
+  font-size: 10px; font-weight: 700;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.cart-items { list-style: none; }
+.cart-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+
+.cart-item:last-child { border-bottom: none; }
+.cart-item-name { font-size: 13px; font-weight: 500; }
+.cart-item-sub  { font-size: 11px; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════ */
+.hamburger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  color: var(--text); font-size: 22px; padding: 4px;
+}
+
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,0.5); }
+  .main { margin-left: 0; }
+  .hamburger { display: block; }
+  .form-grid { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-field:nth-child(even) { border-left: none; padding-left: 0; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .content { padding: 16px; }
+  .topbar { padding: 0 16px; }
+}
+
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr; }
+  .table-header { flex-direction: column; align-items: stretch; }
+  .search-box input { width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   PRINT STYLES
+═══════════════════════════════════════════════════════ */
+@media print {
+  .sidebar, .topbar, .action-btns, .btn, .hamburger { display: none !important; }
+  .main { margin: 0; }
+  body { background: white; color: black; }
+  .table-wrap { border: 1px solid #ccc; box-shadow: none; }
+  .data-table th { background: #f0f0f0 !important; color: black !important; }
+  .data-table td { color: black !important; }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════════ */
+@keyframes fadeUp  { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
+
+.fade-up { animation: fadeUp 0.4s ease both; }
+
+/* ═══════════════════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════════════════ */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; display: block; }
+.empty-state h3 { font-size: 16px; margin-bottom: 8px; color: var(--text-dim); }
+
+/* Tab underline */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab {
+  padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--text-muted); border-bottom: 2px solid transparent;
+  transition: var(--transition); margin-bottom: -1px;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Value color */
+.value-fixed { color: var(--gold); font-family: var(--font-mono); }
+.value-semi  { color: var(--accent); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-mark">📦</div>
+      <h1>InvTrack</h1>
+      <p>Inventory Management System</p>
+    </div>
+
+    <div class="login-error" id="loginError"></div>
+
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()" id="loginBtn">
+      Sign In
+    </button>
+
+    <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted);">
+      Default: <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;">admin / Admin@123</code>
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════════════ -->
+<div id="appShell">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark-sm">📦</div>
+      <h2>InvTrack</h2>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Main</div>
+        <div class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard">
+          <span class="icon">⊞</span> Dashboard
+        </div>
+        <div class="nav-item" onclick="navigate('inventory')" id="nav-inventory">
+          <span class="icon">📋</span> Inventory
+        </div>
+        <div class="nav-item" onclick="navigate('cart')" id="nav-cart">
+          <span class="icon">🛒</span> My List <span id="cartBadge" class="cart-badge" style="display:none">0</span>
+        </div>
+      </div>
+
+      <div class="nav-section" id="adminNavSection">
+        <div class="nav-section-label">Admin</div>
+        <div class="nav-item" onclick="navigate('users')" id="nav-users">
+          <span class="icon">👥</span> Users
+        </div>
+        <div class="nav-item" onclick="navigate('reports')" id="nav-reports">
+          <span class="icon">📊</span> Reports
+        </div>
+        <div class="nav-item" onclick="navigate('audit')" id="nav-audit">
+          <span class="icon">🔍</span> Audit Log
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar" id="sidebarAvatar">?</div>
+        <div class="user-info">
+          <h4 id="sidebarName">Loading…</h4>
+          <p id="sidebarRole">—</p>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="doLogout()">🚪 Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Main Area -->
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <h1 id="pageTitle">Dashboard</h1>
+      <div id="topbarActions"></div>
+    </div>
+
+    <div class="content" id="pageContent">
+      <!-- Content rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════ -->
+
+<!-- Item Form Modal -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="itemModalTitle">Add Item</h2>
+      <div class="close-btn" onclick="closeModal('itemModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="itemId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Type of Item *</label>
+          <input type="text" id="fType" placeholder="e.g. Laptop, Chair">
+        </div>
+        <div class="form-group">
+          <label>Property Number</label>
+          <input type="text" id="fPropertyNumber" placeholder="e.g. PN-2024-001">
+        </div>
+        <div class="form-group full">
+          <label>Description *</label>
+          <textarea id="fDescription" rows="2" placeholder="Detailed description of the item"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Unit Value (₱) *</label>
+          <input type="number" id="fUnitValue" placeholder="0.00" min="0" step="0.01" oninput="autoSetCategory()">
+        </div>
+        <div class="form-group">
+          <label>Unit of Measure</label>
+          <input type="text" id="fUnitOfMeasure" placeholder="e.g. pcs, sets, units">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="fCategory">
+            <option value="Semi-Asset">Semi-Asset (≤ ₱50,000)</option>
+            <option value="Fixed Asset">Fixed Asset (> ₱50,000)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="fLocation" placeholder="e.g. Room 201, Floor 3">
+        </div>
+        <div class="form-group">
+          <label>End User</label>
+          <input type="text" id="fEndUser" placeholder="Name of end user">
+        </div>
+        <div class="form-group">
+          <label>MR (Person Assigned)</label>
+          <input type="text" id="fMR" placeholder="Accountable person">
+        </div>
+        <div class="form-group full">
+          <label>Remarks</label>
+          <textarea id="fRemarks" rows="2" placeholder="Additional notes…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('itemModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()" id="saveItemBtn">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Item Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2>Item Details</h2>
+      <div class="close-btn" onclick="closeModal('detailModal')">×</div>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+    <div class="modal-footer" id="detailModalFooter"></div>
+  </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>QR Code</h2>
+      <div class="close-btn" onclick="closeModal('qrModal')">×</div>
+    </div>
+    <div class="modal-body" style="text-align:center;" id="qrModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('qrModal')">Close</button>
+      <button class="btn btn-primary" onclick="printQR()">🖨 Print QR</button>
+    </div>
+  </div>
+</div>
+
+<!-- User Form Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="userModalTitle">Add User</h2>
+      <div class="close-btn" onclick="closeModal('userModal')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="uId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Username *</label>
+          <input type="text" id="uUsername">
+        </div>
+        <div class="form-group">
+          <label>Password <span id="uPassHint" style="color:var(--text-muted);font-size:10px">(leave blank to keep)</span></label>
+          <input type="password" id="uPassword" placeholder="New password">
+        </div>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="uFullName">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="uEmail">
+        </div>
+        <div class="form-group">
+          <label>Role *</label>
+          <select id="uRole">
+            <option value="user">User</option>
+            <option value="authorized">Authorized Personnel</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="uActive">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()" id="saveUserBtn">Save User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2 id="confirmTitle">Confirm Action</h2>
+      <div class="close-btn" onclick="closeModal('confirmModal')">×</div>
+    </div>
+    <div class="modal-body"><p id="confirmMsg" style="color:var(--text-dim)"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════
+// ║ CONFIGURATION — REPLACE WITH YOUR DEPLOYED URL
+// ╚══════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycby2CtSXuTt07VA4NR7j7gJUR_luo28C8iuGnYcQ4VtATfLMR1i97j0GACf4fuWRmpk/exec';
+
+// ── APP STATE ──────────────────────────────────────────
+const state = {
+  user:       null,
+  token:      null,
+  cart:       [],          // selected items list
+  inventory:  [],
+  currentPage: 'dashboard',
+};
+
+// ── INIT ───────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('inv_session');
+  if (saved) {
+    const { user, token } = JSON.parse(saved);
+    state.user  = user;
+    state.token = token;
+    showApp();
+  }
+
+  // Check if deep-link QR scan
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('view') === 'item' && urlParams.get('id')) {
+    handleQRScan(urlParams.get('id'));
+  }
+
+  // Enter key on login
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+// ── MODAL HELPERS ──────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg, type = 'info', duration = 3500) {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').prepend(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ── CONFIRM ────────────────────────────────────────────
+function confirm(title, msg, onOk) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.onclick = () => { closeModal('confirmModal'); onOk(); };
+  openModal('confirmModal');
+}
+
+// ── API ────────────────────────────────────────────────
+async function api(params) {
+  if (state.token) params.token = state.token;
+  try {
+    const res  = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (!data.success && data.error === 'Unauthorized') {
+      toast('Session expired. Please log in again.', 'error');
+      doLogout();
+    }
+    return data;
+  } catch (e) {
+    toast('Network error: ' + e.message, 'error');
+    return { success: false, error: e.message };
+  }
+}
+
+// ── AUTH ───────────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl    = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+
+  if (!username || !password) {
+    errEl.textContent = 'Please enter username and password.';
+    errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+  btn.innerHTML = '<span class="loader"></span> Signing in…';
+  btn.disabled = true;
+
+  const res = await api({ action: 'login', username, password });
+
+  btn.innerHTML = 'Sign In'; btn.disabled = false;
+
+  if (res.success) {
+    state.user  = res.user;
+    state.token = res.token;
+    sessionStorage.setItem('inv_session', JSON.stringify({ user: res.user, token: res.token }));
+    showApp();
+  } else {
+    errEl.textContent = res.error || 'Invalid credentials.';
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  api({ action: 'logout' });
+  state.user  = null; state.token = null; state.cart = [];
+  sessionStorage.removeItem('inv_session');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').style.display    = 'none';
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display    = 'flex';
+
+  // Populate user info
+  const u = state.user;
+  document.getElementById('sidebarName').textContent = u.fullName || u.username;
+  document.getElementById('sidebarRole').textContent = roleLabel(u.role);
+  document.getElementById('sidebarAvatar').textContent = (u.fullName || u.username)[0].toUpperCase();
+
+  // Show admin nav only for super_admin
+  document.getElementById('adminNavSection').style.display = u.role === 'super_admin' ? '' : 'none';
+
+  navigate('dashboard');
+}
+
+function roleLabel(r) {
+  return { super_admin: '⭐ Super Admin', authorized: '🔑 Authorized', user: '👤 User' }[r] || r;
+}
+
+// ── NAVIGATION ─────────────────────────────────────────
+function navigate(page) {
+  state.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+
+  const titles = {
+    dashboard: 'Dashboard',
+    inventory: 'Inventory',
+    cart:      'My List',
+    users:     'User Management',
+    reports:   'Reports',
+    audit:     'Audit Log',
+  };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+  document.getElementById('topbarActions').innerHTML = '';
+
+  const pages = {
+    dashboard: renderDashboard,
+    inventory: renderInventory,
+    cart:      renderCart,
+    users:     renderUsers,
+    reports:   renderReports,
+    audit:     renderAudit,
+  };
+
+  if (pages[page]) pages[page]();
+  closeSidebar();
+}
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); }
+
+// ── PAGES ──────────────────────────────────────────────
+
+// DASHBOARD
+async function renderDashboard() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `<div class="stat-grid">${[...Array(4)].map(() =>
+    `<div class="stat-card"><div class="loader"></div></div>`).join('')}</div>`;
+
+  const res = await api({ action: 'getDashboard' });
+  if (!res.success) { content.innerHTML = '<p style="color:var(--red)">Failed to load dashboard.</p>'; return; }
+
+  const s = res.stats;
+  content.innerHTML = `
+    <div class="stat-grid fade-up">
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value">${s.total}</div>
+        <div class="stat-label">Total Items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏷️</div>
+        <div class="stat-value" style="color:var(--gold)">${s.fixedAssets}</div>
+        <div class="stat-label">Fixed Assets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📌</div>
+        <div class="stat-value" style="color:var(--accent)">${s.semiAssets}</div>
+        <div class="stat-label">Semi-Assets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" style="font-size:22px">₱${fmtNum(s.totalValue)}</div>
+        <div class="stat-label">Total Value</div>
+      </div>
+    </div>
+    <div class="table-wrap fade-up">
+      <div class="table-header">
+        <h3>Recently Updated Items</h3>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('inventory')">View All →</button>
+      </div>
+      ${buildItemTable(s.recentItems || [], true)}
+    </div>`;
+}
+
+// INVENTORY
+async function renderInventory() {
+  const content = document.getElementById('pageContent');
+  const canAdd  = ['super_admin', 'user', 'authorized'].includes(state.user.role);
+
+  document.getElementById('topbarActions').innerHTML = canAdd
+    ? `<button class="btn btn-primary btn-sm" onclick="openItemForm()">＋ Add Item</button>` : '';
+
+  content.innerHTML = `
+    <div class="table-wrap fade-up">
+      <div class="table-header">
+        <h3>All Items</h3>
+        <div class="search-box">
+          🔍 <input type="text" id="searchInput" placeholder="Search…" oninput="filterInventory()">
+        </div>
+        <select class="form-group select" id="filterCat" onchange="filterInventory()"
+          style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;">
+          <option value="">All Categories</option>
+          <option value="Fixed Asset">Fixed Asset</option>
+          <option value="Semi-Asset">Semi-Asset</option>
+        </select>
+      </div>
+      <div id="inventoryTable"><div style="padding:40px;text-align:center"><span class="loader"></span></div></div>
+    </div>`;
+
+  const res = await api({ action: 'listItems' });
+  state.inventory = res.items || [];
+  renderInventoryTable(state.inventory);
+}
+
+function filterInventory() {
+  const q   = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const cat = document.getElementById('filterCat')?.value || '';
+  const filtered = state.inventory.filter(it => {
+    const text = [it.description, it.type, it.propertyNumber, it.location, it.endUser, it.mr]
+      .join(' ').toLowerCase();
+    return (!q || text.includes(q)) && (!cat || it.category === cat);
+  });
+  renderInventoryTable(filtered);
+}
+
+function renderInventoryTable(items) {
+  document.getElementById('inventoryTable').innerHTML = buildItemTable(items, false);
+}
+
+function buildItemTable(items, compact) {
+  if (!items.length) return `<div class="empty-state"><span class="icon">📭</span><h3>No items found</h3></div>`;
+
+  const canEdit   = ['super_admin', 'authorized'].includes(state.user.role);
+  const canDelete = state.user.role === 'super_admin';
+
+  return `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr>
+          ${!compact ? '<th>ID</th>' : ''}
+          <th>Type</th>
+          <th>Description</th>
+          ${!compact ? '<th>Property #</th>' : ''}
+          <th>Category</th>
+          <th>Unit Value</th>
+          <th>Location</th>
+          <th>End User</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(it => `
+          <tr>
+            ${!compact ? `<td class="col-id">${it.id.slice(-10)}</td>` : ''}
+            <td><strong style="color:var(--text)">${esc(it.type)}</strong></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.description)}</td>
+            ${!compact ? `<td>${esc(it.propertyNumber)}</td>` : ''}
+            <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span></td>
+            <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</td>
+            <td>${esc(it.location)}</td>
+            <td>${esc(it.endUser)}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁</button>
+                <button class="btn btn-ghost btn-sm" onclick="showQR('${it.id}','${esc(it.description)}')">⬛</button>
+                <button class="btn btn-success btn-sm" onclick="addToCart('${it.id}')">＋ List</button>
+                ${canEdit   ? `<button class="btn btn-ghost btn-sm" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
+                ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
+              </div>
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+// ── ITEM FORM ──────────────────────────────────────────
+function openItemForm(id) {
+  const editing = !!id;
+  document.getElementById('itemModalTitle').textContent = editing ? 'Edit Item' : 'Add New Item';
+  document.getElementById('saveItemBtn').textContent = editing ? 'Update Item' : 'Save Item';
+  document.getElementById('itemId').value = id || '';
+
+  if (editing) {
+    const item = state.inventory.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('fType').value          = item.type || '';
+    document.getElementById('fPropertyNumber').value= item.propertyNumber || '';
+    document.getElementById('fDescription').value   = item.description || '';
+    document.getElementById('fUnitValue').value     = item.unitValue || '';
+    document.getElementById('fUnitOfMeasure').value = item.unitOfMeasure || '';
+    document.getElementById('fCategory').value      = item.category || 'Semi-Asset';
+    document.getElementById('fLocation').value      = item.location || '';
+    document.getElementById('fEndUser').value       = item.endUser || '';
+    document.getElementById('fMR').value            = item.mr || '';
+    document.getElementById('fRemarks').value       = item.remarks || '';
+  } else {
+    ['fType','fPropertyNumber','fDescription','fUnitValue','fUnitOfMeasure','fLocation','fEndUser','fMR','fRemarks']
+      .forEach(f => document.getElementById(f).value = '');
+    document.getElementById('fCategory').value = 'Semi-Asset';
+  }
+
+  openModal('itemModal');
+}
+
+function autoSetCategory() {
+  const val = parseFloat(document.getElementById('fUnitValue').value) || 0;
+  document.getElementById('fCategory').value = val > 50000 ? 'Fixed Asset' : 'Semi-Asset';
+}
+
+async function saveItem() {
+  const id   = document.getElementById('itemId').value;
+  const type = document.getElementById('fType').value.trim();
+  const desc = document.getElementById('fDescription').value.trim();
+  const val  = document.getElementById('fUnitValue').value;
+
+  if (!type || !desc) { toast('Type and Description are required.', 'error'); return; }
+  if (!val || isNaN(parseFloat(val))) { toast('Unit Value must be a valid number.', 'error'); return; }
+
+  const btn = document.getElementById('saveItemBtn');
+  btn.innerHTML = '<span class="loader"></span>'; btn.disabled = true;
+
+  const params = {
+    action:         id ? 'updateItem' : 'createItem',
+    id,
+    type:           document.getElementById('fType').value.trim(),
+    propertyNumber: document.getElementById('fPropertyNumber').value.trim(),
+    description:    document.getElementById('fDescription').value.trim(),
+    unitValue:      document.getElementById('fUnitValue').value,
+    unitOfMeasure:  document.getElementById('fUnitOfMeasure').value.trim(),
+    category:       document.getElementById('fCategory').value,
+    location:       document.getElementById('fLocation').value.trim(),
+    endUser:        document.getElementById('fEndUser').value.trim(),
+    mr:             document.getElementById('fMR').value.trim(),
+    remarks:        document.getElementById('fRemarks').value.trim(),
+  };
+
+  const res = await api(params);
+  btn.innerHTML = id ? 'Update Item' : 'Save Item'; btn.disabled = false;
+
+  if (res.success) {
+    toast(id ? 'Item updated!' : 'Item created!', 'success');
+    closeModal('itemModal');
+    renderInventory();
+  } else {
+    toast('Error: ' + res.error, 'error');
+  }
+}
+
+// ── VIEW ITEM ──────────────────────────────────────────
+async function viewItem(id) {
+  const item = state.inventory.find(i => i.id === id) || (await api({ action: 'getItem', id })).item;
+  if (!item) { toast('Item not found', 'error'); return; }
+  showItemDetail(item);
+}
+
+function showItemDetail(item) {
+  const canEdit = ['super_admin', 'authorized'].includes(state.user?.role);
+  const fields  = [
+    ['ID',              item.id],
+    ['Type',            item.type],
+    ['Property #',      item.propertyNumber],
+    ['Category',        `<span class="badge ${item.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${item.category}</span>`],
+    ['Unit Value',      `₱${fmtNum(item.unitValue)}`],
+    ['Unit of Measure', item.unitOfMeasure],
+    ['Location',        item.location],
+    ['End User',        item.endUser],
+    ['MR (Assigned)',   item.mr],
+    ['Date Created',    fmtDate(item.dateCreated)],
+    ['Date Updated',    fmtDate(item.dateUpdated)],
+    ['Remarks',         item.remarks],
+    ['Description',     item.description],
+  ];
+
+  document.getElementById('detailModalBody').innerHTML = `
+    <div class="detail-grid">
+      ${fields.map(([l, v]) => `
+        <div class="detail-field">
+          <div class="detail-label">${l}</div>
+          <div class="detail-value">${v || '—'}</div>
+        </div>`).join('')}
+    </div>`;
+
+  document.getElementById('detailModalFooter').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal('detailModal')">Close</button>
+    <button class="btn btn-success" onclick="addToCart('${item.id}');closeModal('detailModal')">＋ Add to List</button>
+    <button class="btn btn-gold" onclick="exportSinglePDF('${item.id}')">📄 Export PDF</button>
+    <button class="btn btn-ghost" onclick="printDetail()">🖨 Print</button>
+    ${canEdit ? `<button class="btn btn-primary" onclick="closeModal('detailModal');openItemForm('${item.id}')">✏️ Edit</button>` : ''}`;
+
+  openModal('detailModal');
+}
+
+// ── DELETE ─────────────────────────────────────────────
+function deleteItemConfirm(id) {
+  confirm('Delete Item', 'This action cannot be undone. Are you sure?', async () => {
+    const res = await api({ action: 'deleteItem', id });
+    if (res.success) { toast('Item deleted.', 'success'); renderInventory(); }
+    else toast('Error: ' + res.error, 'error');
+  });
+}
+
+// ── QR CODE ────────────────────────────────────────────
+function showQR(id, desc) {
+  const item = state.inventory.find(i => i.id === id) || { id, description: desc };
+  const url  = `${window.location.origin}${window.location.pathname}?view=item&id=${id}`;
+
+  document.getElementById('qrModalBody').innerHTML = `
+    <p style="margin-bottom:16px;color:var(--text-dim)">${esc(item.description || desc)}</p>
+    <div class="qr-container" id="qrCanvas"></div>
+    <p style="margin-top:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);word-break:break-all">${url}</p>`;
+
+  openModal('qrModal');
+
+  setTimeout(() => {
+    document.getElementById('qrCanvas').innerHTML = '';
+    new QRCode(document.getElementById('qrCanvas'), {
+      text: url,
+      width: 220, height: 220,
+      colorDark: '#000000', colorLight: '#ffffff',
+    });
+  }, 100);
+}
+
+function printQR() {
+  const qr = document.getElementById('qrCanvas');
+  const w   = window.open('', '_blank');
+  w.document.write(`<html><body style="text-align:center;font-family:sans-serif">
+    <h2>Inventory Item QR Code</h2>
+    <div>${qr.innerHTML}</div>
+    <script>window.print();window.close();<\/script></body></html>`);
+  w.document.close();
+}
+
+// ── CART ───────────────────────────────────────────────
+function addToCart(id) {
+  if (state.cart.find(i => i === id)) { toast('Item already in list.', 'info'); return; }
+  state.cart.push(id);
+  updateCartBadge();
+  toast('Added to list!', 'success');
+}
+
+function removeFromCart(id) {
+  state.cart = state.cart.filter(i => i !== id);
+  updateCartBadge();
+  renderCart();
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = state.cart.length;
+  badge.style.display = state.cart.length > 0 ? 'flex' : 'none';
+}
+
+function renderCart() {
+  const content = document.getElementById('pageContent');
+  if (!state.cart.length) {
+    content.innerHTML = `<div class="empty-state"><span class="icon">🛒</span><h3>Your list is empty</h3>
+      <p style="margin-bottom:20px">Add items from the inventory.</p>
+      <button class="btn btn-primary" onclick="navigate('inventory')">Browse Inventory</button></div>`;
+    return;
+  }
+
+  const items = state.cart.map(id => state.inventory.find(i => i.id === id)).filter(Boolean);
+
+  document.getElementById('topbarActions').innerHTML =
+    `<button class="btn btn-gold" onclick="exportCartPDF()">📄 Export PDF</button>
+     <button class="btn btn-ghost" onclick="printCart()">🖨 Print</button>
+     <button class="btn btn-danger btn-sm" onclick="state.cart=[];updateCartBadge();renderCart()">Clear All</button>`;
+
+  content.innerHTML = `
+    <div class="table-wrap fade-up">
+      <div class="table-header">
+        <h3>Selected Items (${items.length})</h3>
+      </div>
+      <ul class="cart-items" style="padding:0 20px">
+        ${items.map(it => `
+          <li class="cart-item">
+            <div>
+              <div class="cart-item-name">${esc(it.type)} — ${esc(it.description)}</div>
+              <div class="cart-item-sub">${it.propertyNumber ? `PN: ${it.propertyNumber} | ` : ''}${it.location} | ₱${fmtNum(it.unitValue)}</div>
+            </div>
+            <div class="action-btns">
+              <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁</button>
+              <button class="btn btn-danger btn-sm" onclick="removeFromCart('${it.id}')">✕</button>
+            </div>
+          </li>`).join('')}
+      </ul>
+    </div>`;
+}
+
+// ── USERS ──────────────────────────────────────────────
+async function renderUsers() {
+  if (state.user.role !== 'super_admin') { navigate('dashboard'); return; }
+
+  document.getElementById('topbarActions').innerHTML =
+    `<button class="btn btn-primary btn-sm" onclick="openUserForm()">＋ Add User</button>`;
+
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `<div class="table-wrap"><div style="padding:40px;text-align:center"><span class="loader"></span></div></div>`;
+
+  const res = await api({ action: 'listUsers' });
+  if (!res.success) { content.innerHTML = '<p style="color:var(--red)">Failed to load users.</p>'; return; }
+
+  const users = res.users || [];
+  content.innerHTML = `
+    <div class="table-wrap fade-up">
+      <div class="table-header"><h3>All Users (${users.length})</h3></div>
+      <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          ${users.map(u => `
+            <tr>
+              <td><strong style="color:var(--text)">${esc(u.username)}</strong></td>
+              <td>${esc(u.fullName)}</td>
+              <td>${esc(u.email)}</td>
+              <td><span class="badge ${u.role==='super_admin'?'badge-admin':u.role==='authorized'?'badge-auth':'badge-user'}">${roleLabel(u.role)}</span></td>
+              <td><span class="badge ${u.active?'badge-user':'badge-fixed'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn btn-ghost btn-sm" onclick="openUserForm('${u.id}')">✏️</button>
+                  ${u.id !== state.user.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUserConfirm('${u.id}')">🗑</button>` : ''}
+                </div>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+
+  window._users = users;
+}
+
+function openUserForm(id) {
+  const editing = !!id;
+  document.getElementById('userModalTitle').textContent = editing ? 'Edit User' : 'Add User';
+  document.getElementById('uId').value = id || '';
+  document.getElementById('uPassHint').style.display = editing ? 'inline' : 'none';
+
+  if (editing) {
+    const u = (window._users || []).find(u => u.id === id);
+    if (!u) return;
+    document.getElementById('uUsername').value = u.username;
+    document.getElementById('uFullName').value = u.fullName;
+    document.getElementById('uEmail').value    = u.email;
+    document.getElementById('uRole').value     = u.role;
+    document.getElementById('uActive').value   = String(u.active);
+    document.getElementById('uPassword').value = '';
+  } else {
+    ['uUsername','uFullName','uEmail','uPassword'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('uRole').value   = 'user';
+    document.getElementById('uActive').value = 'true';
+  }
+
+  openModal('userModal');
+}
+
+async function saveUser() {
+  const id = document.getElementById('uId').value;
+  const username = document.getElementById('uUsername').value.trim();
+  const password = document.getElementById('uPassword').value;
+
+  if (!username) { toast('Username is required.', 'error'); return; }
+  if (!id && !password) { toast('Password is required for new users.', 'error'); return; }
+
+  const btn = document.getElementById('saveUserBtn');
+  btn.innerHTML = '<span class="loader"></span>'; btn.disabled = true;
+
+  const params = {
+    action:   id ? 'updateUser' : 'createUser',
+    id,
+    username,
+    fullName: document.getElementById('uFullName').value.trim(),
+    email:    document.getElementById('uEmail').value.trim(),
+    role:     document.getElementById('uRole').value,
+    active:   document.getElementById('uActive').value,
+  };
+  if (password) params.password = password;
+
+  const res = await api(params);
+  btn.innerHTML = 'Save User'; btn.disabled = false;
+
+  if (res.success) {
+    toast(id ? 'User updated!' : 'User created!', 'success');
+    closeModal('userModal');
+    renderUsers();
+  } else {
+    toast('Error: ' + res.error, 'error');
+  }
+}
+
+function deleteUserConfirm(id) {
+  confirm('Delete User', 'This will permanently remove the user. Continue?', async () => {
+    const res = await api({ action: 'deleteUser', id });
+    if (res.success) { toast('User deleted.', 'success'); renderUsers(); }
+    else toast('Error: ' + res.error, 'error');
+  });
+}
+
+// ── REPORTS ────────────────────────────────────────────
+async function renderReports() {
+  if (state.user.role !== 'super_admin') { navigate('dashboard'); return; }
+
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="filter-bar fade-up">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="rCat">
+          <option value="">All</option>
+          <option value="Fixed Asset">Fixed Asset</option>
+          <option value="Semi-Asset">Semi-Asset</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <input type="text" id="rLoc" placeholder="Filter by location">
+      </div>
+      <div class="form-group">
+        <label>End User</label>
+        <input type="text" id="rEndUser" placeholder="Filter by end user">
+      </div>
+      <div class="form-group">
+        <label>Date From</label>
+        <input type="date" id="rDateFrom">
+      </div>
+      <div class="form-group">
+        <label>Date To</label>
+        <input type="date" id="rDateTo">
+      </div>
+      <button class="btn btn-primary" onclick="runReport()">🔍 Run Report</button>
+    </div>
+    <div id="reportResult"></div>`;
+}
+
+async function runReport() {
+  const el = document.getElementById('reportResult');
+  el.innerHTML = `<div style="padding:40px;text-align:center"><span class="loader"></span></div>`;
+
+  const res = await api({
+    action:   'getReport',
+    category: document.getElementById('rCat').value,
+    location: document.getElementById('rLoc').value,
+    endUser:  document.getElementById('rEndUser').value,
+    dateFrom: document.getElementById('rDateFrom').value,
+    dateTo:   document.getElementById('rDateTo').value,
+  });
+
+  if (!res.success) { el.innerHTML = '<p style="color:var(--red)">Failed to load report.</p>'; return; }
+
+  const { items, stats } = res;
+  window._reportData = { items, stats };
+
+  el.innerHTML = `
+    <div class="stat-grid" style="margin-bottom:20px">
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-value">${stats.total}</div>
+        <div class="stat-label">Total Items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" style="font-size:20px">₱${fmtNum(stats.totalValue)}</div>
+        <div class="stat-label">Total Value</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏷️</div>
+        <div class="stat-value" style="color:var(--gold)">${stats.fixedAssets}</div>
+        <div class="stat-label">Fixed Assets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📌</div>
+        <div class="stat-value" style="color:var(--accent)">${stats.semiAssets}</div>
+        <div class="stat-label">Semi-Assets</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Report Results (${items.length} items)</h3>
+        <button class="btn btn-gold btn-sm" onclick="exportReportPDF()">📄 Export PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Type</th><th>Description</th><th>Property #</th>
+            <th>Category</th><th>Unit Value</th><th>UOM</th>
+            <th>Location</th><th>End User</th><th>MR</th>
+            <th>Remarks</th><th>Date Created</th><th>Date Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(it => `<tr>
+            <td class="col-id">${it.id.slice(-10)}</td>
+            <td>${esc(it.type)}</td>
+            <td>${esc(it.description)}</td>
+            <td>${esc(it.propertyNumber)}</td>
+            <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span></td>
+            <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</td>
+            <td>${esc(it.unitOfMeasure)}</td>
+            <td>${esc(it.location)}</td>
+            <td>${esc(it.endUser)}</td>
+            <td>${esc(it.mr)}</td>
+            <td>${esc(it.remarks)}</td>
+            <td>${fmtDate(it.dateCreated)}</td>
+            <td>${fmtDate(it.dateUpdated)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+}
+
+// ── AUDIT LOG ──────────────────────────────────────────
+async function renderAudit() {
+  if (state.user.role !== 'super_admin') { navigate('dashboard'); return; }
+
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `<div style="padding:40px;text-align:center"><span class="loader"></span></div>`;
+
+  const res = await api({ action: 'getAuditLog', limit: 200 });
+  if (!res.success) { content.innerHTML = '<p style="color:var(--red)">Failed to load audit log.</p>'; return; }
+
+  const logs = res.logs || [];
+  content.innerHTML = `
+    <div class="table-wrap fade-up">
+      <div class="table-header"><h3>Audit Log (${logs.length} recent)</h3></div>
+      <div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Item ID</th></tr></thead>
+        <tbody>
+          ${logs.map(l => `<tr>
+            <td style="white-space:nowrap">${fmtDate(l.timestamp)}</td>
+            <td>${esc(l.user)}</td>
+            <td><span class="badge ${l.action==='DELETE'?'badge-fixed':l.action==='CREATE'?'badge-user':'badge-auth'}">${l.action}</span></td>
+            <td class="col-id">${esc(l.itemId)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+}
+
+// ── PDF EXPORT ─────────────────────────────────────────
+function exportReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc  = new jsPDF({ orientation: 'landscape' });
+  const data = window._reportData;
+  if (!data) { toast('Run a report first.', 'info'); return; }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Inventory Report', 14, 18);
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+  doc.text(`Generated: ${new Date().toLocaleString()} | Total Items: ${data.stats.total} | Total Value: ₱${fmtNum(data.stats.totalValue)}`, 14, 26);
+
+  doc.autoTable({
+    startY: 32,
+    head: [['Type', 'Description', 'Property #', 'Category', 'Unit Value', 'Location', 'End User', 'MR', 'Date Created']],
+    body: data.items.map(it => [
+      it.type, it.description, it.propertyNumber, it.category,
+      '₱' + fmtNum(it.unitValue), it.location, it.endUser, it.mr, fmtDate(it.dateCreated)
+    ]),
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [26, 115, 232] },
+    alternateRowStyles: { fillColor: [245, 247, 255] },
+  });
+
+  doc.save('inventory-report.pdf');
+  toast('PDF exported!', 'success');
+}
+
+function exportSinglePDF(id) {
+  const item = state.inventory.find(i => i.id === id);
+  if (!item) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+  doc.text('Inventory Item Details', 14, 20);
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+
+  const rows = [
+    ['ID', item.id], ['Type', item.type], ['Description', item.description],
+    ['Property #', item.propertyNumber], ['Category', item.category],
+    ['Unit Value', '₱' + fmtNum(item.unitValue)], ['Unit of Measure', item.unitOfMeasure],
+    ['Location', item.location], ['End User', item.endUser], ['MR', item.mr],
+    ['Remarks', item.remarks], ['Date Created', fmtDate(item.dateCreated)],
+    ['Date Updated', fmtDate(item.dateUpdated)],
+  ];
+
+  doc.autoTable({
+    startY: 28,
+    body: rows,
+    theme: 'striped',
+    styles: { fontSize: 10 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
+  });
+
+  doc.save(`item-${item.propertyNumber || item.id}.pdf`);
+  toast('PDF exported!', 'success');
+}
+
+function exportCartPDF() {
+  const items = state.cart.map(id => state.inventory.find(i => i.id === id)).filter(Boolean);
+  if (!items.length) { toast('Your list is empty.', 'info'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+  doc.text('Selected Inventory Items', 14, 18);
+
+  doc.autoTable({
+    startY: 26,
+    head: [['Type', 'Description', 'Property #', 'Category', 'Unit Value', 'Location', 'End User']],
+    body: items.map(it => [it.type, it.description, it.propertyNumber, it.category,
+      '₱' + fmtNum(it.unitValue), it.location, it.endUser]),
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [26, 115, 232] },
+  });
+
+  doc.save('selected-items.pdf');
+  toast('PDF exported!', 'success');
+}
+
+function exportCSV() {
+  const data = window._reportData;
+  if (!data) { toast('Run a report first.', 'info'); return; }
+
+  const headers = ['ID','Type','Description','Property #','Category','Unit Value','UOM','Location','End User','MR','Remarks','Date Created','Date Updated'];
+  const rows = data.items.map(it => [
+    it.id, it.type, it.description, it.propertyNumber, it.category,
+    it.unitValue, it.unitOfMeasure, it.location, it.endUser, it.mr,
+    it.remarks, fmtDate(it.dateCreated), fmtDate(it.dateUpdated)
+  ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
+
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'inventory-report.csv';
+  a.click();
+  toast('CSV exported!', 'success');
+}
+
+function printCart() { window.print(); }
+function printDetail() { window.print(); }
+
+// ── QR SCAN DEEP LINK ──────────────────────────────────
+async function handleQRScan(id) {
+  const res = await api({ action: 'getItem', id });
+  if (!res.success) { alert('Item not found.'); return; }
+
+  if (!state.user) {
+    // Not logged in — show public view
+    document.getElementById('loginScreen').style.display = 'none';
+    document.body.innerHTML = buildPublicDetailPage(res.item);
+    return;
+  }
+  showItemDetail(res.item);
+}
+
+function buildPublicDetailPage(item) {
+  return `
+    <html><head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Item: ${esc(item.type)}</title>
+    <style>
+      body{font-family:system-ui,sans-serif;max-width:600px;margin:40px auto;padding:20px;background:#f5f7fa;color:#333}
+      h1{font-size:22px;margin-bottom:4px}
+      .badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700;background:#e8f0fe;color:#1a73e8}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+      .field label{font-size:11px;text-transform:uppercase;color:#999;display:block;margin-bottom:2px}
+      .field p{font-size:15px;font-weight:500}
+      .btn{display:inline-block;padding:10px 20px;background:#1a73e8;color:white;border-radius:8px;text-decoration:none;margin-top:20px;font-weight:600}
+    </style>
+    </head><body>
+    <h1>${esc(item.type)}</h1>
+    <span class="badge">${esc(item.category)}</span>
+    <p style="color:#666;margin-top:8px">${esc(item.description)}</p>
+    <div class="grid">
+      ${[['Property #',item.propertyNumber],['Unit Value','₱'+fmtNum(item.unitValue)],
+         ['Location',item.location],['End User',item.endUser],['MR',item.mr],
+         ['Remarks',item.remarks],['Date Created',fmtDate(item.dateCreated)]].map(([l,v])=>
+        `<div class="field"><label>${l}</label><p>${v||'—'}</p></div>`).join('')}
+    </div>
+    <a href="?" class="btn">🔐 Log in to manage this item</a>
+    </body></html>`;
+}
+
+// ── UTILITIES ──────────────────────────────────────────
+function fmtNum(n) {
+  const num = parseFloat(n) || 0;
+  return num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }); }
+  catch { return d; }
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
