@@ -652,6 +652,189 @@ body {
 /* Value color */
 .value-fixed { color: var(--gold); font-family: var(--font-mono); }
 .value-semi  { color: var(--accent); font-family: var(--font-mono); }
+
+/* ═══════════════════════════════════════════════════════
+   QR SCAN LANDING PAGE (full-screen, mobile-first)
+═══════════════════════════════════════════════════════ */
+#qrScanPage {
+  display: none;
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 0;
+}
+
+.scan-hero {
+  background: linear-gradient(135deg, var(--surface) 0%, #1a1f35 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 20px 20px;
+  position: relative;
+}
+
+.scan-hero-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.scan-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-head); font-size: 16px; font-weight: 800;
+  background: linear-gradient(135deg, var(--text), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.scan-logo-mark {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+
+.scan-login-btn {
+  font-size: 12px; padding: 7px 14px;
+}
+
+.scan-item-header {
+  display: flex; align-items: flex-start; gap: 16px;
+}
+
+.scan-item-icon {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, rgba(79,142,247,0.2), rgba(124,92,191,0.2));
+  border: 1px solid rgba(79,142,247,0.3);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+
+.scan-item-title { flex: 1; }
+.scan-item-title h1 {
+  font-family: var(--font-head); font-size: 22px; font-weight: 800;
+  line-height: 1.2; margin-bottom: 6px;
+}
+
+.scan-item-title p {
+  font-size: 13px; color: var(--text-dim); line-height: 1.5;
+}
+
+.scan-body { padding: 20px; }
+
+.scan-fields {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.scan-field {
+  display: flex; align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  gap: 14px;
+}
+
+.scan-field:last-child { border-bottom: none; }
+
+.scan-field-icon {
+  font-size: 16px; width: 28px; text-align: center; flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.scan-field-content { flex: 1; min-width: 0; }
+.scan-field-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 2px;
+}
+.scan-field-value {
+  font-size: 14px; color: var(--text); font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.scan-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 16px;
+}
+
+.scan-actions .btn-full-action {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px; border-radius: var(--radius); border: none;
+  cursor: pointer; font-family: var(--font-body); font-size: 13px;
+  font-weight: 600; transition: var(--transition);
+}
+
+.scan-btn-add {
+  background: linear-gradient(135deg, var(--green), #059669);
+  color: white;
+  grid-column: 1 / -1;
+  font-size: 15px; padding: 16px;
+  box-shadow: 0 4px 20px rgba(52,211,153,0.3);
+}
+
+.scan-btn-add:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(52,211,153,0.4); }
+.scan-btn-add.added {
+  background: linear-gradient(135deg, #374151, #1f2937);
+  box-shadow: none; cursor: default;
+}
+
+.scan-btn-pdf {
+  background: rgba(240,180,41,0.12);
+  border: 1px solid rgba(240,180,41,0.3) !important;
+  color: var(--gold);
+}
+.scan-btn-pdf:hover { background: rgba(240,180,41,0.22); }
+
+.scan-btn-print {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border2) !important;
+  color: var(--text-dim);
+}
+.scan-btn-print:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+.scan-btn-edit {
+  background: rgba(79,142,247,0.12);
+  border: 1px solid rgba(79,142,247,0.3) !important;
+  color: var(--accent);
+  grid-column: 1 / -1;
+}
+.scan-btn-edit:hover { background: rgba(79,142,247,0.22); }
+
+.scan-added-notice {
+  background: rgba(52,211,153,0.1);
+  border: 1px solid rgba(52,211,153,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--green);
+  padding: 12px 16px;
+  font-size: 13px; font-weight: 500;
+  text-align: center;
+  display: none;
+  margin-bottom: 16px;
+}
+
+.scan-go-list {
+  width: 100%; text-align: center;
+  font-size: 12px; color: var(--text-muted);
+  cursor: pointer; text-decoration: underline; margin-top: 8px;
+  background: none; border: none; display: none;
+}
+
+.scan-not-logged {
+  background: rgba(79,142,247,0.08);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.scan-not-logged p { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+
+@media (max-width: 480px) {
+  .scan-hero { padding: 20px 16px 16px; }
+  .scan-body  { padding: 16px; }
+  .scan-item-title h1 { font-size: 18px; }
+}
+
 </style>
 </head>
 <body>
@@ -753,6 +936,58 @@ body {
 
     <div class="content" id="pageContent">
       <!-- Content rendered by JS -->
+    </div>
+  </div>
+
+<!-- ══════════════════════════════════════════════════════
+     QR SCAN LANDING PAGE
+══════════════════════════════════════════════════════ -->
+<div id="qrScanPage">
+  <div class="scan-hero">
+    <div class="scan-hero-top">
+      <div class="scan-logo">
+        <div class="scan-logo-mark">📦</div>
+        InvTrack
+      </div>
+      <button class="btn btn-ghost scan-login-btn" id="scanLoginBtn" onclick="goToLogin()" style="display:none">
+        🔐 Log In
+      </button>
+      <button class="btn btn-ghost scan-login-btn" id="scanDashBtn" onclick="goToDashboard()" style="display:none">
+        ⊞ Dashboard
+      </button>
+    </div>
+    <div class="scan-item-header">
+      <div class="scan-item-icon" id="scanItemIcon">📦</div>
+      <div class="scan-item-title">
+        <h1 id="scanItemType">Loading…</h1>
+        <p id="scanItemDesc" style="color:var(--text-muted)">Fetching item details…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scan-body">
+    <!-- Not logged in notice -->
+    <div class="scan-not-logged" id="scanNotLoggedNotice" style="display:none">
+      <p>Log in to add this item to your list or manage it.</p>
+      <button class="btn btn-primary btn-full" onclick="goToLogin()">🔐 Log In to InvTrack</button>
+    </div>
+
+    <!-- Added to list notice -->
+    <div class="scan-added-notice" id="scanAddedNotice">
+      ✅ Item added to your list!
+    </div>
+    <button class="scan-go-list" id="scanGoListBtn" onclick="goToDashboard()">
+      View My List →
+    </button>
+
+    <!-- Item fields -->
+    <div class="scan-fields" id="scanFields">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Action buttons -->
+    <div class="scan-actions" id="scanActionsArea">
+      <!-- filled by JS -->
     </div>
   </div>
 </div>
@@ -923,10 +1158,11 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbw84Vu0X2UfdWoGTJu9PMle
 
 // ── APP STATE ──────────────────────────────────────────
 const state = {
-  user:       null,
-  token:      null,
-  cart:       [],          // selected items list
-  inventory:  [],
+  user:        null,
+  token:       null,
+  cart:        [],          // selected item IDs
+  inventory:   [],          // full inventory cache
+  scannedItems:{},          // items loaded via QR scan (keyed by id)
   currentPage: 'dashboard',
 };
 
@@ -1360,7 +1596,7 @@ function showItemDetail(item) {
 
   document.getElementById('detailModalFooter').innerHTML = `
     <button class="btn btn-ghost" onclick="closeModal('detailModal')">Close</button>
-    <button class="btn btn-success" onclick="addToCart('${item.id}');closeModal('detailModal')">＋ Add to List</button>
+    <button class="btn btn-success" id="detailAddBtn_${item.id}" onclick="addToCart('${item.id}');this.textContent='✅ In List';this.disabled=true">＋ Add to List</button>
     <button class="btn btn-gold" onclick="exportSinglePDF('${item.id}')">📄 Export PDF</button>
     <button class="btn btn-ghost" onclick="printDetail()">🖨 Print</button>
     ${canEdit ? `<button class="btn btn-primary" onclick="closeModal('detailModal');openItemForm('${item.id}')">✏️ Edit</button>` : ''}`;
@@ -1410,8 +1646,18 @@ function printQR() {
 }
 
 // ── CART ───────────────────────────────────────────────
+// Cart stores item IDs. Items are looked up from inventory cache
+// OR from scannedItems (populated via QR scan without full inventory load).
+function resolveCartItems() {
+  return state.cart.map(id => {
+    return state.inventory.find(i => i.id === id) ||
+           (state.scannedItems && state.scannedItems[id]) ||
+           null;
+  }).filter(Boolean);
+}
+
 function addToCart(id) {
-  if (state.cart.find(i => i === id)) { toast('Item already in list.', 'info'); return; }
+  if (state.cart.includes(id)) { toast('Item already in list.', 'info'); return; }
   state.cart.push(id);
   updateCartBadge();
   toast('Added to list!', 'success');
@@ -1420,11 +1666,12 @@ function addToCart(id) {
 function removeFromCart(id) {
   state.cart = state.cart.filter(i => i !== id);
   updateCartBadge();
-  renderCart();
+  if (state.currentPage === 'cart') renderCart();
 }
 
 function updateCartBadge() {
   const badge = document.getElementById('cartBadge');
+  if (!badge) return;
   badge.textContent = state.cart.length;
   badge.style.display = state.cart.length > 0 ? 'flex' : 'none';
 }
@@ -1432,18 +1679,29 @@ function updateCartBadge() {
 function renderCart() {
   const content = document.getElementById('pageContent');
   if (!state.cart.length) {
+    document.getElementById('topbarActions').innerHTML = '';
     content.innerHTML = `<div class="empty-state"><span class="icon">🛒</span><h3>Your list is empty</h3>
-      <p style="margin-bottom:20px">Add items from the inventory.</p>
+      <p style="margin-bottom:20px">Scan a QR code or add items from the inventory.</p>
       <button class="btn btn-primary" onclick="navigate('inventory')">Browse Inventory</button></div>`;
     return;
   }
 
-  const items = state.cart.map(id => state.inventory.find(i => i.id === id)).filter(Boolean);
+  const items = resolveCartItems();
+
+  // If some items aren't cached yet, fetch inventory first
+  if (items.length < state.cart.length && state.inventory.length === 0) {
+    content.innerHTML = '<div style="padding:40px;text-align:center"><span class="loader"></span><p style="margin-top:12px;color:var(--text-muted)">Loading items…</p></div>';
+    api({ action: 'listItems' }).then(res => {
+      if (res.success) { state.inventory = res.items || []; }
+      renderCart();
+    });
+    return;
+  }
 
   document.getElementById('topbarActions').innerHTML =
     `<button class="btn btn-gold" onclick="exportCartPDF()">📄 Export PDF</button>
      <button class="btn btn-ghost" onclick="printCart()">🖨 Print</button>
-     <button class="btn btn-danger btn-sm" onclick="state.cart=[];updateCartBadge();renderCart()">Clear All</button>`;
+     <button class="btn btn-danger btn-sm" onclick="clearCart()">Clear All</button>`;
 
   content.innerHTML = `
     <div class="table-wrap fade-up">
@@ -1453,17 +1711,28 @@ function renderCart() {
       <ul class="cart-items" style="padding:0 20px">
         ${items.map(it => `
           <li class="cart-item">
-            <div>
-              <div class="cart-item-name">${esc(it.type)} — ${esc(it.description)}</div>
-              <div class="cart-item-sub">${it.propertyNumber ? `PN: ${it.propertyNumber} | ` : ''}${it.location} | ₱${fmtNum(it.unitValue)}</div>
+            <div style="flex:1;min-width:0">
+              <div class="cart-item-name">${esc(it.type)} — <span style="font-weight:400;color:var(--text-dim)">${esc(it.description)}</span></div>
+              <div class="cart-item-sub">
+                ${it.propertyNumber ? `<span style="font-family:var(--font-mono)">PN: ${esc(it.propertyNumber)}</span> &nbsp;·&nbsp; ` : ''}
+                ${esc(it.location) || '—'} &nbsp;·&nbsp;
+                <span class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
+                &nbsp;·&nbsp; <span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}" style="font-size:10px">${esc(it.category)}</span>
+              </div>
             </div>
-            <div class="action-btns">
+            <div class="action-btns" style="flex-shrink:0">
               <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁</button>
               <button class="btn btn-danger btn-sm" onclick="removeFromCart('${it.id}')">✕</button>
             </div>
           </li>`).join('')}
       </ul>
     </div>`;
+}
+
+function clearCart() {
+  state.cart = [];
+  updateCartBadge();
+  renderCart();
 }
 
 // ── USERS ──────────────────────────────────────────────
@@ -1830,45 +2099,141 @@ function printCart() { window.print(); }
 function printDetail() { window.print(); }
 
 // ── QR SCAN DEEP LINK ──────────────────────────────────
+// Shows a beautiful mobile-optimised scan page in-app
+// Works for all roles: not logged in, user, authorized, super_admin
 async function handleQRScan(id) {
-  const res = await api({ action: 'getItem', id });
-  if (!res.success) { alert('Item not found.'); return; }
+  // Hide login and app shell, show scan page
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display    = 'none';
+  document.getElementById('qrScanPage').style.display  = 'block';
 
-  if (!state.user) {
-    // Not logged in — show public view
-    document.getElementById('loginScreen').style.display = 'none';
-    document.body.innerHTML = buildPublicDetailPage(res.item);
+  // Show loading state
+  document.getElementById('scanItemType').textContent = 'Loading item…';
+  document.getElementById('scanItemDesc').textContent = 'Please wait';
+  document.getElementById('scanFields').innerHTML = '<div style="padding:30px;text-align:center"><span class="loader"></span></div>';
+  document.getElementById('scanActionsArea').innerHTML = '';
+
+  const res = await api({ action: 'getItem', id });
+  if (!res.success) {
+    document.getElementById('scanItemType').textContent = 'Item not found';
+    document.getElementById('scanItemDesc').textContent = 'This QR code may be invalid or the item was deleted.';
+    document.getElementById('scanFields').innerHTML = '<div class="empty-state"><span class="icon">❓</span><h3>No item found for this QR code.</h3></div>';
     return;
   }
-  showItemDetail(res.item);
+
+  renderScanPage(res.item);
 }
 
-function buildPublicDetailPage(item) {
-  return `
-    <html><head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Item: ${esc(item.type)}</title>
-    <style>
-      body{font-family:system-ui,sans-serif;max-width:600px;margin:40px auto;padding:20px;background:#f5f7fa;color:#333}
-      h1{font-size:22px;margin-bottom:4px}
-      .badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700;background:#e8f0fe;color:#1a73e8}
-      .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-      .field label{font-size:11px;text-transform:uppercase;color:#999;display:block;margin-bottom:2px}
-      .field p{font-size:15px;font-weight:500}
-      .btn{display:inline-block;padding:10px 20px;background:#1a73e8;color:white;border-radius:8px;text-decoration:none;margin-top:20px;font-weight:600}
-    </style>
-    </head><body>
-    <h1>${esc(item.type)}</h1>
-    <span class="badge">${esc(item.category)}</span>
-    <p style="color:#666;margin-top:8px">${esc(item.description)}</p>
-    <div class="grid">
-      ${[['Property #',item.propertyNumber],['Unit Value','₱'+fmtNum(item.unitValue)],
-         ['Location',item.location],['End User',item.endUser],['MR',item.mr],
-         ['Remarks',item.remarks],['Date Created',fmtDate(item.dateCreated)]].map(([l,v])=>
-        `<div class="field"><label>${l}</label><p>${v||'—'}</p></div>`).join('')}
-    </div>
-    <a href="?" class="btn">🔐 Log in to manage this item</a>
-    </body></html>`;
+function renderScanPage(item) {
+  // Store scanned item so cart works without needing full inventory loaded
+  if (!state.scannedItems) state.scannedItems = {};
+  state.scannedItems[item.id] = item;
+  // Also push into inventory cache so exportSinglePDF works
+  if (!state.inventory.find(i => i.id === item.id)) {
+    state.inventory.push(item);
+  }
+
+  const isLoggedIn  = !!state.user;
+  const canEdit     = isLoggedIn && ['super_admin', 'authorized'].includes(state.user.role);
+  const isInCart    = state.cart.includes(item.id);
+
+  // Icon based on category
+  const catIcon = item.category === 'Fixed Asset' ? '🏷️' : '📌';
+  document.getElementById('scanItemIcon').textContent = catIcon;
+  document.getElementById('scanItemType').textContent  = item.type || '—';
+  document.getElementById('scanItemDesc').textContent  = item.description || '—';
+
+  // Login / Dashboard button
+  document.getElementById('scanLoginBtn').style.display  = isLoggedIn ? 'none'  : 'inline-flex';
+  document.getElementById('scanDashBtn').style.display   = isLoggedIn ? 'inline-flex' : 'none';
+
+  // Not-logged-in notice
+  document.getElementById('scanNotLoggedNotice').style.display = isLoggedIn ? 'none' : 'block';
+
+  // Fields
+  const fieldDefs = [
+    ['📋', 'Property Number', item.propertyNumber],
+    ['🏷️', 'Category',        item.category],
+    ['💰', 'Unit Value',      item.unitValue ? '₱' + fmtNum(item.unitValue) : '—'],
+    ['📏', 'Unit of Measure', item.unitOfMeasure],
+    ['📍', 'Location',        item.location],
+    ['👤', 'End User',        item.endUser],
+    ['🔑', 'MR (Assigned)',   item.mr],
+    ['📅', 'Date Created',    fmtDate(item.dateCreated)],
+    ['🔄', 'Date Updated',    fmtDate(item.dateUpdated)],
+    ['💬', 'Remarks',         item.remarks],
+  ];
+
+  document.getElementById('scanFields').innerHTML = fieldDefs
+    .filter(([, , v]) => v && v !== '—')
+    .map(([icon, label, val]) => `
+      <div class="scan-field">
+        <div class="scan-field-icon">${icon}</div>
+        <div class="scan-field-content">
+          <div class="scan-field-label">${label}</div>
+          <div class="scan-field-value">${esc(String(val))}</div>
+        </div>
+      </div>`).join('');
+
+  // Action buttons — only for logged-in users
+  if (isLoggedIn) {
+    const addedAlready = isInCart;
+    document.getElementById('scanActionsArea').innerHTML = `
+      <button
+        class="btn-full-action scan-btn-add ${addedAlready ? 'added' : ''}"
+        id="scanAddBtn"
+        onclick="scanAddToCart('${item.id}')"
+        ${addedAlready ? 'disabled' : ''}>
+        ${addedAlready ? '✅ Already in Your List' : '＋ Add to My List'}
+      </button>
+      <button class="btn-full-action scan-btn-pdf"  onclick="exportSinglePDF('${item.id}')">📄 Export PDF</button>
+      <button class="btn-full-action scan-btn-print" onclick="window.print()">🖨 Print</button>
+      ${canEdit ? `<button class="btn-full-action scan-btn-edit" onclick="goToEdit('${item.id}')">✏️ Edit This Item</button>` : ''}
+    `;
+    if (addedAlready) {
+      document.getElementById('scanAddedNotice').style.display = 'block';
+      document.getElementById('scanGoListBtn').style.display   = 'block';
+    }
+  }
+}
+
+function scanAddToCart(id) {
+  if (state.cart.includes(id)) { toast('Already in your list.', 'info'); return; }
+  state.cart.push(id);
+  updateCartBadge();
+
+  // Update button state immediately
+  const btn = document.getElementById('scanAddBtn');
+  if (btn) {
+    btn.textContent = '✅ Added to Your List';
+    btn.classList.add('added');
+    btn.disabled = true;
+  }
+  document.getElementById('scanAddedNotice').style.display = 'block';
+  document.getElementById('scanGoListBtn').style.display   = 'block';
+  toast('Added to your list! 🎉', 'success');
+}
+
+function goToLogin() {
+  document.getElementById('qrScanPage').style.display  = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function goToDashboard() {
+  document.getElementById('qrScanPage').style.display = 'none';
+  if (state.user) {
+    document.getElementById('appShell').style.display = 'flex';
+    navigate('cart');
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+}
+
+function goToEdit(id) {
+  document.getElementById('qrScanPage').style.display = 'none';
+  document.getElementById('appShell').style.display   = 'flex';
+  navigate('inventory');
+  setTimeout(() => openItemForm(id), 400);
 }
 
 // ── UTILITIES ──────────────────────────────────────────
