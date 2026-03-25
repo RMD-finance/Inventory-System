@@ -10,8 +10,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-<!-- QR Code Library -->
+<!-- QR Code Generator Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- jsQR: QR Code Reader from camera stream -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -835,6 +837,141 @@ body {
   .scan-item-title h1 { font-size: 18px; }
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   BUILT-IN QR SCANNER
+═══════════════════════════════════════════════════════ */
+.scanner-modal { max-width: 480px; }
+
+.scanner-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+#scannerVideo {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Animated scanning frame overlay */
+.scanner-frame {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+
+.scanner-corners {
+  position: relative;
+  width: 60%; aspect-ratio: 1/1;
+}
+
+.scanner-corners::before,
+.scanner-corners::after,
+.corner-br, .corner-bl {
+  content: '';
+  position: absolute;
+  width: 28px; height: 28px;
+  border-color: var(--accent);
+  border-style: solid;
+}
+
+.scanner-corners::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.scanner-corners::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+.corner-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+
+/* Laser scan line animation */
+.scanner-laser {
+  position: absolute;
+  left: 20%; right: 20%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: laserScan 2s ease-in-out infinite;
+  top: 20%;
+}
+
+@keyframes laserScan {
+  0%   { top: 20%; opacity: 1; }
+  50%  { top: 80%; opacity: 1; }
+  100% { top: 20%; opacity: 1; }
+}
+
+.scanner-status {
+  text-align: center;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+.scanner-status .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+
+.scanner-result {
+  background: rgba(52,211,153,0.1);
+  border: 1px solid rgba(52,211,153,0.35);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: none;
+  align-items: center; gap: 12px;
+  margin-top: 8px;
+  animation: fadeUp 0.3s ease;
+}
+
+.scanner-result .result-icon { font-size: 22px; }
+.scanner-result-text h4 { font-size: 14px; font-weight: 600; color: var(--green); }
+.scanner-result-text p  { font-size: 12px; color: var(--text-muted); }
+
+.scanner-err {
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  padding: 12px 16px;
+  font-size: 13px;
+  text-align: center;
+  display: none;
+  margin-top: 8px;
+}
+
+.scanner-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px;
+  line-height: 1.6;
+}
+
+/* Camera select dropdown */
+.camera-select-wrap {
+  margin-bottom: 12px;
+}
+.camera-select-wrap select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
 </style>
 </head>
 <body>
@@ -897,6 +1034,9 @@ body {
         </div>
         <div class="nav-item" onclick="navigate('cart')" id="nav-cart">
           <span class="icon">🛒</span> My List <span id="cartBadge" class="cart-badge" style="display:none">0</span>
+        </div>
+        <div class="nav-item" onclick="openScanner()" id="nav-scanner">
+          <span class="icon">📷</span> Scan QR
         </div>
       </div>
 
@@ -1641,7 +1781,73 @@ function printQR() {
   w.document.write(`<html><body style="text-align:center;font-family:sans-serif">
     <h2>Inventory Item QR Code</h2>
     <div>${qr.innerHTML}</div>
-    <script>window.print();window.close();<\/script></body></html>`);
+    <script>window.print();window.close();<\/script>
+<!-- ══════════════════════════════════════════════════════
+     BUILT-IN QR SCANNER MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="scannerModal">
+  <div class="modal scanner-modal">
+    <div class="modal-header">
+      <h2>📷 Scan QR Code</h2>
+      <div class="close-btn" onclick="closeScanner()">×</div>
+    </div>
+    <div class="modal-body" style="padding-top:16px">
+
+      <!-- Camera selector (shown when multiple cameras available) -->
+      <div class="camera-select-wrap" id="cameraSelectWrap" style="display:none">
+        <select id="cameraSelect" onchange="switchCamera()">
+        </select>
+      </div>
+
+      <!-- Video viewport -->
+      <div class="scanner-viewport">
+        <video id="scannerVideo" autoplay muted playsinline></video>
+        <!-- Hidden canvas for frame capture -->
+        <canvas id="scannerCanvas" style="display:none"></canvas>
+
+        <!-- Corner frame overlay -->
+        <div class="scanner-frame">
+          <div class="scanner-corners">
+            <div class="corner-br"></div>
+            <div class="corner-bl"></div>
+          </div>
+        </div>
+
+        <!-- Laser line -->
+        <div class="scanner-laser"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="scanner-status" id="scannerStatus">
+        <span class="dot"></span>
+        <span id="scannerStatusText">Initialising camera…</span>
+      </div>
+
+      <!-- Error message -->
+      <div class="scanner-err" id="scannerErr"></div>
+
+      <!-- Success result -->
+      <div class="scanner-result" id="scannerResult">
+        <div class="result-icon">✅</div>
+        <div class="scanner-result-text">
+          <h4>QR Code Detected!</h4>
+          <p id="scannerResultText">Opening item…</p>
+        </div>
+      </div>
+
+      <p class="scanner-hint">
+        Point your camera at an InvTrack QR code.<br>
+        The item will open automatically when detected.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeScanner()">Cancel</button>
+      <button class="btn btn-ghost btn-sm" onclick="flipCamera()" id="flipCamBtn" style="display:none">🔄 Flip Camera</button>
+    </div>
+  </div>
+</div>
+
+</body></html>`);
   w.document.close();
 }
 
@@ -2253,6 +2459,213 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+
+// ═══════════════════════════════════════════════════════
+// BUILT-IN QR SCANNER
+// Uses jsQR to decode frames from the device camera.
+// ═══════════════════════════════════════════════════════
+
+const SCANNER = {
+  stream:      null,   // active MediaStream
+  rafId:       null,   // requestAnimationFrame handle
+  scanning:    true,   // false after a successful scan (prevents double-fire)
+  cameras:     [],     // list of available video devices
+  activeCamIdx: 0,     // index into cameras[]
+};
+
+// Open the scanner modal and start camera
+async function openScanner() {
+  closeSidebar();
+  SCANNER.scanning = true;
+
+  // Reset UI
+  document.getElementById('scannerErr').style.display    = 'none';
+  document.getElementById('scannerResult').style.display = 'none';
+  document.getElementById('scannerStatusText').textContent = 'Initialising camera…';
+  openModal('scannerModal');
+
+  await startCamera();
+}
+
+// Start (or restart) the camera stream
+async function startCamera(deviceId) {
+  stopCamera(); // stop any existing stream first
+
+  // Prefer back/environment camera on mobile
+  const constraints = {
+    video: deviceId
+      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 1280 } }
+      : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } },
+    audio: false,
+  };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    SCANNER.stream = stream;
+
+    const video = document.getElementById('scannerVideo');
+    video.srcObject = stream;
+    await video.play();
+
+    document.getElementById('scannerStatusText').textContent = 'Scanning — point at a QR code…';
+
+    // Enumerate all cameras (only works after permission is granted)
+    await enumerateCameras();
+
+    // Start decode loop
+    SCANNER.scanning = true;
+    requestAnimationFrame(decodeTick);
+
+  } catch (err) {
+    let msg = 'Could not access camera.';
+    if (err.name === 'NotAllowedError')  msg = 'Camera permission denied. Please allow camera access in your browser settings.';
+    if (err.name === 'NotFoundError')    msg = 'No camera found on this device.';
+    if (err.name === 'NotReadableError') msg = 'Camera is in use by another app.';
+
+    const errEl = document.getElementById('scannerErr');
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    document.getElementById('scannerStatusText').textContent = 'Camera error';
+  }
+}
+
+// Build camera selector dropdown
+async function enumerateCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    SCANNER.cameras = devices.filter(d => d.kind === 'videoinput');
+
+    const wrap   = document.getElementById('cameraSelectWrap');
+    const select = document.getElementById('cameraSelect');
+
+    if (SCANNER.cameras.length > 1) {
+      select.innerHTML = SCANNER.cameras.map((cam, i) =>
+        `<option value="${cam.deviceId}">📷 ${cam.label || 'Camera ' + (i + 1)}</option>`
+      ).join('');
+      wrap.style.display = 'block';
+      document.getElementById('flipCamBtn').style.display = 'inline-flex';
+    } else {
+      wrap.style.display = 'none';
+      document.getElementById('flipCamBtn').style.display = 'none';
+    }
+  } catch (_) {}
+}
+
+// Switch camera via dropdown
+function switchCamera() {
+  const select   = document.getElementById('cameraSelect');
+  const deviceId = select.value;
+  startCamera(deviceId);
+}
+
+// Flip between front and back camera (mobile shortcut)
+function flipCamera() {
+  const cams  = SCANNER.cameras;
+  if (cams.length < 2) return;
+  SCANNER.activeCamIdx = (SCANNER.activeCamIdx + 1) % cams.length;
+  const cam = cams[SCANNER.activeCamIdx];
+  document.getElementById('cameraSelect').value = cam.deviceId;
+  startCamera(cam.deviceId);
+}
+
+// Per-frame decode loop using jsQR
+function decodeTick() {
+  if (!SCANNER.scanning) return;
+
+  const video  = document.getElementById('scannerVideo');
+  const canvas = document.getElementById('scannerCanvas');
+
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+    SCANNER.rafId = requestAnimationFrame(decodeTick);
+    return;
+  }
+
+  // Draw current frame onto hidden canvas
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Run jsQR on the pixel data
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code      = jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts: 'dontInvert',
+  });
+
+  if (code) {
+    onQRDetected(code.data);
+    return; // don't request next frame
+  }
+
+  SCANNER.rafId = requestAnimationFrame(decodeTick);
+}
+
+// Called when a QR code is successfully decoded
+async function onQRDetected(rawText) {
+  SCANNER.scanning = false; // pause scanning
+  stopCamera();
+
+  // Show result banner
+  document.getElementById('scannerResult').style.display    = 'flex';
+  document.getElementById('scannerStatusText').textContent  = 'QR code found!';
+  document.getElementById('scannerResultText').textContent  = rawText;
+
+  // Extract item ID from InvTrack URL: ?view=item&id=INV-xxx
+  // Also handle raw IDs (e.g. if the QR just contains the ID string)
+  let itemId = null;
+  try {
+    const url    = new URL(rawText);
+    const params = new URLSearchParams(url.search);
+    if (params.get('view') === 'item' && params.get('id')) {
+      itemId = params.get('id');
+    }
+  } catch (_) {
+    // rawText is not a URL — check if it looks like a bare item ID
+    if (/^INV-/i.test(rawText.trim())) {
+      itemId = rawText.trim();
+    }
+  }
+
+  if (!itemId) {
+    // Not an InvTrack QR code — show the raw text, keep modal open
+    document.getElementById('scannerResultText').textContent = rawText;
+    document.getElementById('scannerStatusText').textContent = 'Not an InvTrack QR code';
+    // Allow re-scan after 2 s
+    setTimeout(() => {
+      document.getElementById('scannerResult').style.display = 'none';
+      SCANNER.scanning = true;
+      startCamera();
+    }, 2500);
+    return;
+  }
+
+  document.getElementById('scannerResultText').textContent = 'Loading item ' + itemId + '…';
+
+  // Small delay so the user sees the success banner
+  await new Promise(r => setTimeout(r, 600));
+
+  closeScanner();
+  handleQRScan(itemId);
+}
+
+// Stop camera stream and animation loop
+function stopCamera() {
+  if (SCANNER.rafId) { cancelAnimationFrame(SCANNER.rafId); SCANNER.rafId = null; }
+  if (SCANNER.stream) {
+    SCANNER.stream.getTracks().forEach(t => t.stop());
+    SCANNER.stream = null;
+  }
+  const video = document.getElementById('scannerVideo');
+  if (video) { video.srcObject = null; }
+}
+
+// Close the scanner modal cleanly
+function closeScanner() {
+  stopCamera();
+  closeModal('scannerModal');
+}
+
 </script>
 </body>
 </html>
