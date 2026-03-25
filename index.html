@@ -12,8 +12,8 @@
 
 <!-- QR Code Generator Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- jsQR: QR Code Reader from camera stream -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<!-- jsQR: QR Code Reader from camera stream (unpkg = more reliable) -->
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1290,6 +1290,66 @@ body {
   </div>
 </div>
 
+
+<!-- ══════════════════════════════════════════════════════
+     BUILT-IN QR SCANNER MODAL
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="scannerModal">
+  <div class="modal scanner-modal">
+    <div class="modal-header">
+      <h2>📷 Scan QR Code</h2>
+      <div class="close-btn" onclick="closeScanner()">×</div>
+    </div>
+    <div class="modal-body" style="padding-top:16px">
+
+      <!-- Camera selector (shown when multiple cameras available) -->
+      <div class="camera-select-wrap" id="cameraSelectWrap" style="display:none">
+        <select id="cameraSelect" onchange="switchCamera()"></select>
+      </div>
+
+      <!-- Video viewport -->
+      <div class="scanner-viewport">
+        <video id="scannerVideo" autoplay muted playsinline></video>
+        <canvas id="scannerCanvas" style="display:none"></canvas>
+        <div class="scanner-frame">
+          <div class="scanner-corners">
+            <div class="corner-br"></div>
+            <div class="corner-bl"></div>
+          </div>
+        </div>
+        <div class="scanner-laser"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="scanner-status" id="scannerStatus">
+        <span class="dot"></span>
+        <span id="scannerStatusText">Initialising camera…</span>
+      </div>
+
+      <!-- Error -->
+      <div class="scanner-err" id="scannerErr"></div>
+
+      <!-- Success -->
+      <div class="scanner-result" id="scannerResult">
+        <div class="result-icon">✅</div>
+        <div class="scanner-result-text">
+          <h4>QR Code Detected!</h4>
+          <p id="scannerResultText">Opening item…</p>
+        </div>
+      </div>
+
+      <p class="scanner-hint">
+        Point your camera at an InvTrack QR code.<br>
+        The item will open automatically when detected.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeScanner()">Cancel</button>
+      <button class="btn btn-ghost btn-sm" onclick="flipCamera()" id="flipCamBtn" style="display:none">🔄 Flip Camera</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ╔══════════════════════════════════════════════════════
 // ║ CONFIGURATION — REPLACE WITH YOUR DEPLOYED URL
@@ -1344,7 +1404,12 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 // Close on backdrop click
 document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  o.addEventListener('click', e => {
+    if (e.target !== o) return;
+    // Stop camera cleanly if scanner modal is dismissed via backdrop
+    if (o.id === 'scannerModal') { stopCamera(); }
+    o.classList.remove('open');
+  });
 });
 
 // ── TOAST ──────────────────────────────────────────────
@@ -1782,72 +1847,7 @@ function printQR() {
     <h2>Inventory Item QR Code</h2>
     <div>${qr.innerHTML}</div>
     <script>window.print();window.close();<\/script>
-<!-- ══════════════════════════════════════════════════════
-     BUILT-IN QR SCANNER MODAL
-══════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="scannerModal">
-  <div class="modal scanner-modal">
-    <div class="modal-header">
-      <h2>📷 Scan QR Code</h2>
-      <div class="close-btn" onclick="closeScanner()">×</div>
-    </div>
-    <div class="modal-body" style="padding-top:16px">
-
-      <!-- Camera selector (shown when multiple cameras available) -->
-      <div class="camera-select-wrap" id="cameraSelectWrap" style="display:none">
-        <select id="cameraSelect" onchange="switchCamera()">
-        </select>
-      </div>
-
-      <!-- Video viewport -->
-      <div class="scanner-viewport">
-        <video id="scannerVideo" autoplay muted playsinline></video>
-        <!-- Hidden canvas for frame capture -->
-        <canvas id="scannerCanvas" style="display:none"></canvas>
-
-        <!-- Corner frame overlay -->
-        <div class="scanner-frame">
-          <div class="scanner-corners">
-            <div class="corner-br"></div>
-            <div class="corner-bl"></div>
-          </div>
-        </div>
-
-        <!-- Laser line -->
-        <div class="scanner-laser"></div>
-      </div>
-
-      <!-- Status -->
-      <div class="scanner-status" id="scannerStatus">
-        <span class="dot"></span>
-        <span id="scannerStatusText">Initialising camera…</span>
-      </div>
-
-      <!-- Error message -->
-      <div class="scanner-err" id="scannerErr"></div>
-
-      <!-- Success result -->
-      <div class="scanner-result" id="scannerResult">
-        <div class="result-icon">✅</div>
-        <div class="scanner-result-text">
-          <h4>QR Code Detected!</h4>
-          <p id="scannerResultText">Opening item…</p>
-        </div>
-      </div>
-
-      <p class="scanner-hint">
-        Point your camera at an InvTrack QR code.<br>
-        The item will open automatically when detected.
-      </p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeScanner()">Cancel</button>
-      <button class="btn btn-ghost btn-sm" onclick="flipCamera()" id="flipCamBtn" style="display:none">🔄 Flip Camera</button>
-    </div>
-  </div>
-</div>
-
-</body></html>`);
+    </body></html>`);
   w.document.close();
 }
 
@@ -2462,202 +2462,283 @@ function esc(s) {
 
 
 // ═══════════════════════════════════════════════════════
-// BUILT-IN QR SCANNER
-// Uses jsQR to decode frames from the device camera.
+// BUILT-IN QR SCANNER — fixed for file://, mobile & HTTPS
+// Strategy:
+//   1. Try native BarcodeDetector API (Chrome Android, fast)
+//   2. Fall back to jsQR (pure JS, works everywhere)
+// Camera: always requests environment (rear) camera first.
+// decode loop runs via setInterval (more reliable than rAF
+// inside a CSS-animated modal where the video may not be
+// painted yet when rAF fires).
 // ═══════════════════════════════════════════════════════
 
 const SCANNER = {
-  stream:      null,   // active MediaStream
-  rafId:       null,   // requestAnimationFrame handle
-  scanning:    true,   // false after a successful scan (prevents double-fire)
-  cameras:     [],     // list of available video devices
-  activeCamIdx: 0,     // index into cameras[]
+  stream:       null,
+  intervalId:   null,
+  scanning:     false,
+  cameras:      [],
+  activeCamIdx: 0,
+  detector:     null,   // BarcodeDetector if available
 };
 
-// Open the scanner modal and start camera
+// ── Open modal & boot camera ───────────────────────────
 async function openScanner() {
   closeSidebar();
-  SCANNER.scanning = true;
 
-  // Reset UI
-  document.getElementById('scannerErr').style.display    = 'none';
-  document.getElementById('scannerResult').style.display = 'none';
-  document.getElementById('scannerStatusText').textContent = 'Initialising camera…';
+  // Reset UI state
+  const ids = ['scannerErr','scannerResult'];
+  ids.forEach(id => document.getElementById(id).style.display = 'none');
+  setStatus('⏳ Starting camera…');
+  document.getElementById('flipCamBtn').style.display       = 'none';
+  document.getElementById('cameraSelectWrap').style.display = 'none';
+
   openModal('scannerModal');
 
-  await startCamera();
+  // Give the modal CSS transition (200 ms) time to finish before
+  // we touch the video element — otherwise srcObject assignment
+  // can silently fail on some browsers.
+  setTimeout(() => bootCamera(), 250);
 }
 
-// Start (or restart) the camera stream
-async function startCamera(deviceId) {
-  stopCamera(); // stop any existing stream first
+async function bootCamera(deviceId) {
+  stopCamera();
 
-  // Prefer back/environment camera on mobile
-  const constraints = {
-    video: deviceId
-      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 1280 } }
-      : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } },
-    audio: false,
-  };
+  // Check camera API availability
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    // Likely file:// protocol — show a helpful message
+    showErr(
+      '⚠️ Camera not available. ' +
+      (location.protocol === 'file:'
+        ? 'Opening this file directly (file://) blocks camera access. ' +
+          'Please host index.html on a local server or upload it to GitHub Pages / Netlify.'
+        : 'Your browser does not support camera access.')
+    );
+    return;
+  }
+
+  // Build constraints — prefer rear camera on mobile
+  const videoConstraints = deviceId
+    ? { deviceId: { exact: deviceId } }
+    : { facingMode: { ideal: 'environment' } };
+
+  // Request modest resolution — enough for QR scanning, avoids permission issues
+  videoConstraints.width  = { ideal: 1280 };
+  videoConstraints.height = { ideal: 720 };
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: videoConstraints,
+      audio: false,
+    });
+
     SCANNER.stream = stream;
 
     const video = document.getElementById('scannerVideo');
     video.srcObject = stream;
-    await video.play();
 
-    document.getElementById('scannerStatusText').textContent = 'Scanning — point at a QR code…';
+    // Don't await play() — just fire and wait for canplay event
+    video.play().catch(() => {});
 
-    // Enumerate all cameras (only works after permission is granted)
+    // Wait until the video has actual frame data before starting decode
+    video.oncanplay = () => {
+      setStatus('🎯 Point camera at an InvTrack QR code…');
+      startDecodeLoop();
+    };
+
+    // Also start after 1 s as a safety net in case oncanplay already fired
+    setTimeout(() => {
+      if (!SCANNER.scanning) startDecodeLoop();
+    }, 1000);
+
     await enumerateCameras();
 
-    // Start decode loop
-    SCANNER.scanning = true;
-    requestAnimationFrame(decodeTick);
-
   } catch (err) {
-    let msg = 'Could not access camera.';
-    if (err.name === 'NotAllowedError')  msg = 'Camera permission denied. Please allow camera access in your browser settings.';
-    if (err.name === 'NotFoundError')    msg = 'No camera found on this device.';
-    if (err.name === 'NotReadableError') msg = 'Camera is in use by another app.';
-
-    const errEl = document.getElementById('scannerErr');
-    errEl.textContent = msg;
-    errEl.style.display = 'block';
-    document.getElementById('scannerStatusText').textContent = 'Camera error';
+    let msg = '❌ Could not access camera. ';
+    if (err.name === 'NotAllowedError')  msg += 'Permission was denied — please tap "Allow" when the browser asks for camera access.';
+    else if (err.name === 'NotFoundError')    msg += 'No camera found on this device.';
+    else if (err.name === 'NotReadableError') msg += 'Camera is already in use by another app.';
+    else if (err.name === 'OverconstrainedError') {
+      // Retry without facingMode constraint
+      if (!deviceId) { bootCamera('any'); return; }
+      msg += err.message;
+    }
+    else msg += err.message;
+    showErr(msg);
   }
 }
 
-// Build camera selector dropdown
+// ── Decode loop (setInterval = reliable inside modals) ─
+function startDecodeLoop() {
+  if (SCANNER.scanning) return; // already running
+  SCANNER.scanning = true;
+
+  // Prefer native BarcodeDetector (Chrome 83+, Android) — much faster
+  if (typeof BarcodeDetector !== 'undefined') {
+    try {
+      SCANNER.detector = new BarcodeDetector({ formats: ['qr_code'] });
+    } catch (_) { SCANNER.detector = null; }
+  }
+
+  SCANNER.intervalId = setInterval(decodeFrame, 200); // 5 fps is plenty for QR
+}
+
+async function decodeFrame() {
+  if (!SCANNER.scanning) return;
+
+  const video = document.getElementById('scannerVideo');
+  if (!video || video.readyState < 2 || video.videoWidth === 0) return;
+
+  try {
+    if (SCANNER.detector) {
+      // ── Path A: native BarcodeDetector ────────────────
+      const codes = await SCANNER.detector.detect(video);
+      if (codes.length > 0) {
+        onQRDetected(codes[0].rawValue);
+      }
+    } else {
+      // ── Path B: jsQR via canvas ────────────────────────
+      if (typeof jsQR === 'undefined') {
+        showErr('❌ jsQR library failed to load. Check your internet connection and reload the page.');
+        stopDecodeLoop();
+        return;
+      }
+
+      const canvas = document.getElementById('scannerCanvas');
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code    = jsQR(imgData.data, imgData.width, imgData.height, {
+        inversionAttempts: 'attemptBoth', // handles both dark-on-light and light-on-dark
+      });
+
+      if (code && code.data) {
+        onQRDetected(code.data);
+      }
+    }
+  } catch (e) {
+    // Silently swallow per-frame errors — transient issues shouldn't kill the loop
+    console.warn('QR decode error:', e);
+  }
+}
+
+function stopDecodeLoop() {
+  SCANNER.scanning = false;
+  if (SCANNER.intervalId) { clearInterval(SCANNER.intervalId); SCANNER.intervalId = null; }
+}
+
+// ── On successful decode ───────────────────────────────
+async function onQRDetected(rawText) {
+  stopDecodeLoop(); // stop scanning immediately (prevent double-fire)
+
+  // Visual feedback
+  document.getElementById('scannerResult').style.display   = 'flex';
+  document.getElementById('scannerResultText').textContent = rawText;
+  setStatus('✅ QR code detected!');
+
+  // Try to parse as InvTrack URL: ?view=item&id=INV-xxx
+  let itemId = null;
+
+  try {
+    // Handle both full URLs and relative paths
+    const urlToParse = rawText.startsWith('http') ? rawText : 'https://x.com/' + rawText;
+    const parsed     = new URL(urlToParse);
+    const p          = new URLSearchParams(parsed.search);
+    if (p.get('view') === 'item' && p.get('id')) {
+      itemId = p.get('id');
+    }
+  } catch (_) {}
+
+  // Also accept bare item IDs like INV-1234567890-ABCDEF
+  if (!itemId && /^INV-/i.test(rawText.trim())) {
+    itemId = rawText.trim();
+  }
+
+  if (!itemId) {
+    // Not an InvTrack QR — show raw text and let user re-scan
+    setStatus('⚠️ Not an InvTrack QR code — showing raw content');
+    document.getElementById('scannerResultText').textContent = '"' + rawText + '"';
+    setTimeout(() => {
+      document.getElementById('scannerResult').style.display = 'none';
+      SCANNER.scanning = false;
+      startDecodeLoop();
+    }, 3000);
+    return;
+  }
+
+  document.getElementById('scannerResultText').textContent = 'Opening item…';
+
+  // Brief pause for user feedback, then navigate
+  setTimeout(() => {
+    closeScanner();
+    handleQRScan(itemId);
+  }, 500);
+}
+
+// ── Camera enumeration & switching ────────────────────
 async function enumerateCameras() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
     SCANNER.cameras = devices.filter(d => d.kind === 'videoinput');
 
-    const wrap   = document.getElementById('cameraSelectWrap');
     const select = document.getElementById('cameraSelect');
+    const wrap   = document.getElementById('cameraSelectWrap');
 
     if (SCANNER.cameras.length > 1) {
       select.innerHTML = SCANNER.cameras.map((cam, i) =>
         `<option value="${cam.deviceId}">📷 ${cam.label || 'Camera ' + (i + 1)}</option>`
       ).join('');
+
+      // Pre-select the currently active camera
+      const activeTrack = SCANNER.stream && SCANNER.stream.getVideoTracks()[0];
+      if (activeTrack) {
+        const activeId = activeTrack.getSettings().deviceId;
+        const idx = SCANNER.cameras.findIndex(c => c.deviceId === activeId);
+        if (idx >= 0) { select.selectedIndex = idx; SCANNER.activeCamIdx = idx; }
+      }
+
       wrap.style.display = 'block';
       document.getElementById('flipCamBtn').style.display = 'inline-flex';
-    } else {
-      wrap.style.display = 'none';
-      document.getElementById('flipCamBtn').style.display = 'none';
     }
   } catch (_) {}
 }
 
-// Switch camera via dropdown
 function switchCamera() {
-  const select   = document.getElementById('cameraSelect');
-  const deviceId = select.value;
-  startCamera(deviceId);
+  const sel = document.getElementById('cameraSelect');
+  bootCamera(sel.value);
 }
 
-// Flip between front and back camera (mobile shortcut)
 function flipCamera() {
-  const cams  = SCANNER.cameras;
-  if (cams.length < 2) return;
-  SCANNER.activeCamIdx = (SCANNER.activeCamIdx + 1) % cams.length;
-  const cam = cams[SCANNER.activeCamIdx];
-  document.getElementById('cameraSelect').value = cam.deviceId;
-  startCamera(cam.deviceId);
+  if (SCANNER.cameras.length < 2) return;
+  SCANNER.activeCamIdx = (SCANNER.activeCamIdx + 1) % SCANNER.cameras.length;
+  const cam = SCANNER.cameras[SCANNER.activeCamIdx];
+  document.getElementById('cameraSelect').selectedIndex = SCANNER.activeCamIdx;
+  bootCamera(cam.deviceId);
 }
 
-// Per-frame decode loop using jsQR
-function decodeTick() {
-  if (!SCANNER.scanning) return;
-
-  const video  = document.getElementById('scannerVideo');
-  const canvas = document.getElementById('scannerCanvas');
-
-  if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-    SCANNER.rafId = requestAnimationFrame(decodeTick);
-    return;
-  }
-
-  // Draw current frame onto hidden canvas
-  canvas.width  = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  // Run jsQR on the pixel data
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const code      = jsQR(imageData.data, imageData.width, imageData.height, {
-    inversionAttempts: 'dontInvert',
-  });
-
-  if (code) {
-    onQRDetected(code.data);
-    return; // don't request next frame
-  }
-
-  SCANNER.rafId = requestAnimationFrame(decodeTick);
+// ── Helpers ────────────────────────────────────────────
+function setStatus(msg) {
+  const el = document.getElementById('scannerStatusText');
+  if (el) el.textContent = msg;
 }
 
-// Called when a QR code is successfully decoded
-async function onQRDetected(rawText) {
-  SCANNER.scanning = false; // pause scanning
-  stopCamera();
-
-  // Show result banner
-  document.getElementById('scannerResult').style.display    = 'flex';
-  document.getElementById('scannerStatusText').textContent  = 'QR code found!';
-  document.getElementById('scannerResultText').textContent  = rawText;
-
-  // Extract item ID from InvTrack URL: ?view=item&id=INV-xxx
-  // Also handle raw IDs (e.g. if the QR just contains the ID string)
-  let itemId = null;
-  try {
-    const url    = new URL(rawText);
-    const params = new URLSearchParams(url.search);
-    if (params.get('view') === 'item' && params.get('id')) {
-      itemId = params.get('id');
-    }
-  } catch (_) {
-    // rawText is not a URL — check if it looks like a bare item ID
-    if (/^INV-/i.test(rawText.trim())) {
-      itemId = rawText.trim();
-    }
-  }
-
-  if (!itemId) {
-    // Not an InvTrack QR code — show the raw text, keep modal open
-    document.getElementById('scannerResultText').textContent = rawText;
-    document.getElementById('scannerStatusText').textContent = 'Not an InvTrack QR code';
-    // Allow re-scan after 2 s
-    setTimeout(() => {
-      document.getElementById('scannerResult').style.display = 'none';
-      SCANNER.scanning = true;
-      startCamera();
-    }, 2500);
-    return;
-  }
-
-  document.getElementById('scannerResultText').textContent = 'Loading item ' + itemId + '…';
-
-  // Small delay so the user sees the success banner
-  await new Promise(r => setTimeout(r, 600));
-
-  closeScanner();
-  handleQRScan(itemId);
+function showErr(msg) {
+  const el = document.getElementById('scannerErr');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setStatus('Camera unavailable');
 }
 
-// Stop camera stream and animation loop
 function stopCamera() {
-  if (SCANNER.rafId) { cancelAnimationFrame(SCANNER.rafId); SCANNER.rafId = null; }
+  stopDecodeLoop();
   if (SCANNER.stream) {
     SCANNER.stream.getTracks().forEach(t => t.stop());
     SCANNER.stream = null;
   }
   const video = document.getElementById('scannerVideo');
-  if (video) { video.srcObject = null; }
+  if (video) { video.srcObject = null; video.oncanplay = null; }
 }
 
 // Close the scanner modal cleanly
