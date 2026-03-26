@@ -660,9 +660,12 @@ body {
 ═══════════════════════════════════════════════════════ */
 #qrScanPage {
   display: none;
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
+  z-index: 300;           /* above sidebar (100) and modals (200) */
   background: var(--bg);
-  padding: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scan-hero {
@@ -1085,16 +1088,17 @@ body {
 <div id="qrScanPage">
   <div class="scan-hero">
     <div class="scan-hero-top">
-      <div class="scan-logo">
+      <button class="btn btn-ghost btn-sm" onclick="closeScanPage()" style="padding:7px 12px;gap:6px">
+        ← Back
+      </button>
+      <div class="scan-logo" style="position:absolute;left:50%;transform:translateX(-50%)">
         <div class="scan-logo-mark">📦</div>
         InvTrack
       </div>
-      <button class="btn btn-ghost scan-login-btn" id="scanLoginBtn" onclick="goToLogin()" style="display:none">
+      <button class="btn btn-ghost scan-login-btn" id="scanLoginBtn" onclick="goToLogin()" style="display:none;font-size:12px">
         🔐 Log In
       </button>
-      <button class="btn btn-ghost scan-login-btn" id="scanDashBtn" onclick="goToDashboard()" style="display:none">
-        ⊞ Dashboard
-      </button>
+      <div id="scanDashBtn" style="display:none;width:60px"></div>
     </div>
     <div class="scan-item-header">
       <div class="scan-item-icon" id="scanItemIcon">📦</div>
@@ -1386,9 +1390,11 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch(_) { sessionStorage.removeItem('inv_session'); }
   }
 
-  // Check if deep-link QR scan
+  // Check if deep-link QR scan (?view=item&id=...)
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('view') === 'item' && urlParams.get('id')) {
+    // Show login first (so user can log in), then auto-open the scan overlay
+    // If already logged in (session restored above), overlay shows on top of app
     handleQRScan(urlParams.get('id'));
   }
 
@@ -2308,10 +2314,16 @@ function printDetail() { window.print(); }
 // Shows a beautiful mobile-optimised scan page in-app
 // Works for all roles: not logged in, user, authorized, super_admin
 async function handleQRScan(id) {
-  // Hide login and app shell, show scan page
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appShell').style.display    = 'none';
-  document.getElementById('qrScanPage').style.display  = 'block';
+  // Show the scan overlay on top of whatever is currently visible.
+  // We NEVER hide appShell or loginScreen — that caused the blank screen.
+  const page = document.getElementById('qrScanPage');
+  page.style.display = 'block';
+  // Scroll to top in case the user scrolled down before scanning
+  page.scrollTop = 0;
+
+  // Reset notices from any previous scan
+  document.getElementById('scanAddedNotice').style.display = 'none';
+  document.getElementById('scanGoListBtn').style.display   = 'none';
 
   // Show loading state
   document.getElementById('scanItemType').textContent = 'Loading item…';
@@ -2420,26 +2432,34 @@ function scanAddToCart(id) {
   toast('Added to your list! 🎉', 'success');
 }
 
+function closeScanPage() {
+  document.getElementById('qrScanPage').style.display = 'none';
+}
+
 function goToLogin() {
-  document.getElementById('qrScanPage').style.display  = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
+  closeScanPage();
+  // If not logged in, show login screen
+  if (!state.user) {
+    document.getElementById('appShell').style.display    = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
 }
 
 function goToDashboard() {
-  document.getElementById('qrScanPage').style.display = 'none';
+  closeScanPage();
   if (state.user) {
-    document.getElementById('appShell').style.display = 'flex';
+    // appShell is already visible underneath — just navigate
     navigate('cart');
   } else {
+    document.getElementById('appShell').style.display    = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
   }
 }
 
 function goToEdit(id) {
-  document.getElementById('qrScanPage').style.display = 'none';
-  document.getElementById('appShell').style.display   = 'flex';
+  closeScanPage();
   navigate('inventory');
-  setTimeout(() => openItemForm(id), 400);
+  setTimeout(() => openItemForm(id), 300);
 }
 
 // ── UTILITIES ──────────────────────────────────────────
