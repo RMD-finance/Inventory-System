@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>InvTrack — Inventory Management System</title>
 
 <!-- Fonts -->
@@ -131,9 +131,11 @@ body {
   padding: 12px 16px;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents iOS auto-zoom on focus */
   outline: none;
   transition: var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
@@ -152,6 +154,9 @@ body {
   transition: var(--transition);
   text-decoration: none;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .btn-primary {
@@ -582,31 +587,279 @@ body {
 .cart-item-sub  { font-size: 11px; color: var(--text-muted); }
 
 /* ═══════════════════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — MOBILE-FIRST OPTIMIZATION
 ═══════════════════════════════════════════════════════ */
+
+/* Hamburger — hidden on desktop */
 .hamburger {
   display: none;
   background: none; border: none; cursor: pointer;
   color: var(--text); font-size: 22px; padding: 4px;
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Sidebar overlay backdrop (mobile) */
+.sidebar-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99;
+}
+.sidebar-backdrop.show { display: block; }
+
+/* ── Tablet (≤ 900px) ─────────────────────────── */
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,0.5); }
+  /* Sidebar slides in from left as a drawer */
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 110;
+    width: min(var(--sidebar-w), 85vw);
+    box-shadow: none;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 8px 0 40px rgba(0,0,0,0.6);
+  }
+
   .main { margin-left: 0; }
-  .hamburger { display: block; }
+  .hamburger { display: flex; align-items: center; justify-content: center; }
+
+  /* Tighter content padding */
+  .content  { padding: 16px; }
+  .topbar   { padding: 0 14px; gap: 10px; }
+  .topbar h1 { font-size: 17px; }
+
+  /* Topbar actions wrap */
+  #topbarActions { display: flex; gap: 8px; flex-wrap: nowrap; }
+
+  /* Forms go single-column */
   .form-grid { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
   .detail-field:nth-child(even) { border-left: none; padding-left: 0; }
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-  .content { padding: 16px; }
-  .topbar { padding: 0 16px; }
+
+  /* Stats 2-col */
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .stat-card { padding: 18px; }
+  .stat-value { font-size: 26px; }
+
+  /* Modals full-width on tablet */
+  .modal { max-width: 100%; border-radius: 16px; }
+  .modal-overlay { padding: 12px; align-items: flex-end; }
+  .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+  .modal-body  { padding: 18px 20px; }
+  .modal-footer { padding: 0 20px 20px; flex-wrap: wrap; }
+  .modal-footer .btn { flex: 1; min-width: 0; justify-content: center; }
+  .modal-header { padding: 18px 20px 0; }
+
+  /* Modals slide up from bottom on mobile */
+  .modal { transform: translateY(100%); border-radius: 20px 20px 0 0; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  /* Table header stacks */
+  .table-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .table-header h3 { font-size: 15px; }
+  .search-box { width: 100%; }
+  .search-box input { width: 100%; min-width: 0; }
+
+  /* Filter bar stacks */
+  .filter-bar { flex-direction: column; }
+  .filter-bar .form-group { width: 100%; }
+  .filter-bar .form-group input,
+  .filter-bar .form-group select { min-width: 0; width: 100%; }
+
+  /* Toast position */
+  .toast-container { top: auto; bottom: 80px; left: 12px; right: 12px; }
+  .toast { max-width: 100%; }
 }
 
-@media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr; }
-  .table-header { flex-direction: column; align-items: stretch; }
-  .search-box input { width: 100%; }
+/* ── Mobile (≤ 600px) ─────────────────────────── */
+@media (max-width: 600px) {
+  /* Stats single column */
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 14px 12px; }
+  .stat-icon { width: 36px; height: 36px; font-size: 18px; margin-bottom: 10px; }
+  .stat-value { font-size: 22px; }
+  .stat-label { font-size: 10px; }
+
+  /* Content padding tighter */
+  .content { padding: 12px; }
+  .topbar h1 { font-size: 16px; }
+
+  /* Login card compact */
+  .login-card { padding: 32px 22px; border-radius: 16px; }
+  .login-logo .logo-mark { width: 52px; height: 52px; font-size: 22px; }
+  .login-logo h1 { font-size: 24px; }
+
+  /* Inventory: replace wide table with card list on mobile */
+  .mobile-card-list { display: block !important; }
+  .desktop-table    { display: none !important; }
+
+  /* Cart items more padding for touch */
+  .cart-item { padding: 14px 0; }
+
+  /* Buttons — bigger tap targets */
+  .btn    { min-height: 40px; }
+  .btn-sm { min-height: 36px; padding: 7px 12px; }
+  .btn-lg { min-height: 48px; }
+
+  /* Action buttons wrap cleanly */
+  .action-btns { gap: 5px; }
+
+  /* Modal footer full-width stacked buttons */
+  .modal-footer { flex-direction: column; gap: 8px; }
+  .modal-footer .btn { width: 100%; justify-content: center; }
+
+  /* Header height */
+  :root { --header-h: 56px; }
+
+  /* Close button bigger */
+  .close-btn { width: 36px; height: 36px; font-size: 20px; }
+}
+
+/* ── Small phones (≤ 380px) ───────────────────── */
+@media (max-width: 380px) {
+  .stat-grid  { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-value { font-size: 20px; }
+  .content    { padding: 10px; }
+  .login-card { padding: 28px 16px; }
+}
+
+/* ── Bottom Navigation Bar (mobile only) ─────── */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 95;
+  padding: 0 4px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-inner {
+  display: flex;
+  height: 60px;
+  align-items: stretch;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 6px 2px;
+  border-top: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.bottom-nav-item .bnav-icon { font-size: 20px; line-height: 1; }
+.bottom-nav-item.active { color: var(--accent); border-top-color: var(--accent); }
+.bottom-nav-item:active { background: rgba(255,255,255,0.05); }
+
+.bottom-nav-item .bnav-badge {
+  position: absolute;
+  top: 4px; right: calc(50% - 16px);
+  background: var(--red);
+  color: white;
+  font-size: 9px; font-weight: 700;
+  min-width: 16px; height: 16px;
+  border-radius: 8px;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 0 3px;
+}
+
+@media (max-width: 900px) {
+  .bottom-nav { display: block; }
+  /* Push main content up so bottom nav doesn't overlap */
+  .main { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+  /* Hide sidebar nav items that are duplicated in bottom nav */
+  /* Keep sidebar for admin-only items and sign out */
+}
+
+/* ── Inventory mobile card layout ────────────── */
+.inv-card-list { list-style: none; display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+
+.inv-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s;
+  animation: fadeUp 0.3s ease both;
+}
+
+.inv-card:active { border-color: var(--border2); }
+
+.inv-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.inv-card-icon {
+  width: 40px; height: 40px;
+  background: var(--surface2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+
+.inv-card-info { flex: 1; min-width: 0; }
+.inv-card-type {
+  font-weight: 700; font-size: 14px;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.inv-card-desc {
+  font-size: 12px; color: var(--text-muted); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+.inv-card-meta {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+
+.inv-card-meta .badge { font-size: 10px; }
+.inv-card-val { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+
+.inv-card-bottom {
+  display: flex; gap: 8px; flex-wrap: nowrap;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.inv-card-bottom .btn {
+  flex: 1; justify-content: center;
+  min-height: 36px; font-size: 12px;
+  padding: 6px 8px;
+}
+
+/* Safe area padding for iPhone notch / home bar */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(60px + env(safe-area-inset-bottom));
+  }
+  .bottom-nav-inner { height: 60px; }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -975,6 +1228,131 @@ body {
   outline: none;
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   TOOLTIPS
+   Usage: add data-tooltip="Your text" to any element.
+   Position variants: data-tooltip-pos="top|bottom|left|right"
+   Default position: top
+═══════════════════════════════════════════════════════ */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1e2235;
+  color: #e8eaf2;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 9999;
+  letter-spacing: 0.01em;
+  max-width: 200px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Arrow */
+[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border: 5px solid transparent;
+  border-top-color: #1e2235;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 9999;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Bottom position */
+[data-tooltip][data-tooltip-pos="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px);
+}
+[data-tooltip][data-tooltip-pos="bottom"]::before {
+  bottom: auto;
+  top: calc(100% + 3px);
+  border-top-color: transparent;
+  border-bottom-color: #1e2235;
+  transform: translateX(-50%) translateY(-4px);
+}
+[data-tooltip][data-tooltip-pos="bottom"]:hover::after  { transform: translateX(-50%) translateY(0); }
+[data-tooltip][data-tooltip-pos="bottom"]:hover::before { transform: translateX(-50%) translateY(0); }
+
+/* Left position */
+[data-tooltip][data-tooltip-pos="left"]::after {
+  bottom: auto;
+  top: 50%;
+  left: auto;
+  right: calc(100% + 8px);
+  transform: translateY(-50%) translateX(4px);
+}
+[data-tooltip][data-tooltip-pos="left"]::before {
+  bottom: auto;
+  top: 50%;
+  left: auto;
+  right: calc(100% + 3px);
+  border-top-color: transparent;
+  border-left-color: #1e2235;
+  transform: translateY(-50%) translateX(4px);
+}
+[data-tooltip][data-tooltip-pos="left"]:hover::after  { transform: translateY(-50%) translateX(0); }
+[data-tooltip][data-tooltip-pos="left"]:hover::before { transform: translateY(-50%) translateX(0); }
+
+/* Right position */
+[data-tooltip][data-tooltip-pos="right"]::after {
+  bottom: auto;
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%) translateX(-4px);
+}
+[data-tooltip][data-tooltip-pos="right"]::before {
+  bottom: auto;
+  top: 50%;
+  left: calc(100% + 3px);
+  border-top-color: transparent;
+  border-right-color: #1e2235;
+  transform: translateY(-50%) translateX(-4px);
+}
+[data-tooltip][data-tooltip-pos="right"]:hover::after  { transform: translateY(-50%) translateX(0); }
+[data-tooltip][data-tooltip-pos="right"]:hover::before { transform: translateY(-50%) translateX(0); }
+
+/* Don't show tooltips on touch-only devices while tapping */
+@media (hover: none) {
+  [data-tooltip]::after,
+  [data-tooltip]::before { display: none; }
+}
+
 </style>
 </head>
 <body>
@@ -1065,14 +1443,17 @@ body {
           <p id="sidebarRole">—</p>
         </div>
       </div>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="doLogout()">🚪 Sign Out</button>
+      <button class="btn btn-ghost btn-full btn-sm" data-tooltip="Sign out of your account" data-tooltip-pos="right" onclick="doLogout()">🚪 Sign Out</button>
     </div>
   </nav>
+
+  <!-- Sidebar backdrop for mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 
   <!-- Main Area -->
   <div class="main">
     <div class="topbar">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="hamburger" onclick="toggleSidebar()" data-tooltip="Toggle menu" data-tooltip-pos="bottom">☰</button>
       <h1 id="pageTitle">Dashboard</h1>
       <div id="topbarActions"></div>
     </div>
@@ -1082,20 +1463,47 @@ body {
     </div>
   </div>
 
+  <!-- ── Bottom Navigation Bar (mobile) ── -->
+  <nav class="bottom-nav" id="bottomNav">
+    <div class="bottom-nav-inner">
+      <button class="bottom-nav-item active" id="bnav-dashboard" onclick="navigate('dashboard')">
+        <span class="bnav-icon">⊞</span>
+        <span>Home</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-inventory" onclick="navigate('inventory')">
+        <span class="bnav-icon">📋</span>
+        <span>Inventory</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-scanner" onclick="openScanner()">
+        <span class="bnav-icon" style="width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:-18px;box-shadow:0 4px 16px rgba(79,142,247,0.5);font-size:22px">📷</span>
+        <span>Scan</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-cart" onclick="navigate('cart')">
+        <span class="bnav-icon">🛒</span>
+        <span>My List</span>
+        <span class="bnav-badge" id="bnavCartBadge">0</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-menu" onclick="toggleSidebar()">
+        <span class="bnav-icon">☰</span>
+        <span>Menu</span>
+      </button>
+    </div>
+  </nav>
+
 <!-- ══════════════════════════════════════════════════════
      QR SCAN LANDING PAGE
 ══════════════════════════════════════════════════════ -->
 <div id="qrScanPage">
   <div class="scan-hero">
     <div class="scan-hero-top">
-      <button class="btn btn-ghost btn-sm" onclick="closeScanPage()" style="padding:7px 12px;gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="closeScanPage()" data-tooltip="Go back" style="padding:7px 12px;gap:6px">
         ← Back
       </button>
       <div class="scan-logo" style="position:absolute;left:50%;transform:translateX(-50%)">
         <div class="scan-logo-mark">📦</div>
         InvTrack
       </div>
-      <button class="btn btn-ghost scan-login-btn" id="scanLoginBtn" onclick="goToLogin()" style="display:none;font-size:12px">
+      <button class="btn btn-ghost scan-login-btn" id="scanLoginBtn" onclick="goToLogin()" data-tooltip="Log in to manage items" style="display:none;font-size:12px">
         🔐 Log In
       </button>
       <div id="scanDashBtn" style="display:none;width:60px"></div>
@@ -1196,8 +1604,8 @@ body {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('itemModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveItem()" id="saveItemBtn">Save Item</button>
+      <button class="btn btn-ghost" data-tooltip="Discard changes" onclick="closeModal('itemModal')">Cancel</button>
+      <button class="btn btn-primary" data-tooltip="Save this item to inventory" onclick="saveItem()" id="saveItemBtn">Save Item</button>
     </div>
   </div>
 </div>
@@ -1223,8 +1631,8 @@ body {
     </div>
     <div class="modal-body" style="text-align:center;" id="qrModalBody"></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('qrModal')">Close</button>
-      <button class="btn btn-primary" onclick="printQR()">🖨 Print QR</button>
+      <button class="btn btn-ghost" data-tooltip="Close QR viewer" onclick="closeModal('qrModal')">Close</button>
+      <button class="btn btn-primary" data-tooltip="Print this QR code" onclick="printQR()">🖨 Print QR</button>
     </div>
   </div>
 </div>
@@ -1273,8 +1681,8 @@ body {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveUser()" id="saveUserBtn">Save User</button>
+      <button class="btn btn-ghost" data-tooltip="Discard changes" onclick="closeModal('userModal')">Cancel</button>
+      <button class="btn btn-primary" data-tooltip="Save user account" onclick="saveUser()" id="saveUserBtn">Save User</button>
     </div>
   </div>
 </div>
@@ -1288,7 +1696,7 @@ body {
     </div>
     <div class="modal-body"><p id="confirmMsg" style="color:var(--text-dim)"></p></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-ghost" data-tooltip="Cancel this action" onclick="closeModal('confirmModal')">Cancel</button>
       <button class="btn btn-danger" id="confirmOkBtn">Confirm</button>
     </div>
   </div>
@@ -1348,8 +1756,8 @@ body {
       </p>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeScanner()">Cancel</button>
-      <button class="btn btn-ghost btn-sm" onclick="flipCamera()" id="flipCamBtn" style="display:none">🔄 Flip Camera</button>
+      <button class="btn btn-ghost" data-tooltip="Close scanner" onclick="closeScanner()">Cancel</button>
+      <button class="btn btn-ghost btn-sm" data-tooltip="Switch between front and back camera" onclick="flipCamera()" id="flipCamBtn" style="display:none">🔄 Flip Camera</button>
     </div>
   </div>
 </div>
@@ -1556,10 +1964,22 @@ function navigate(page) {
 
   if (pages[page]) pages[page]();
   closeSidebar();
+  // Sync bottom nav active state
+  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+  const bnavEl = document.getElementById('bnav-' + page);
+  if (bnavEl) bnavEl.classList.add('active');
 }
 
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); }
+function toggleSidebar() {
+  const sidebar  = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen   = sidebar.classList.toggle('open');
+  backdrop.classList.toggle('show', isOpen);
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
+}
 
 // ── PAGES ──────────────────────────────────────────────
 
@@ -1599,7 +2019,7 @@ async function renderDashboard() {
     <div class="table-wrap fade-up">
       <div class="table-header">
         <h3>Recently Updated Items</h3>
-        <button class="btn btn-ghost btn-sm" onclick="navigate('inventory')">View All →</button>
+        <button class="btn btn-ghost btn-sm" data-tooltip="Go to full inventory list" onclick="navigate('inventory')">View All →</button>
       </div>
       ${buildItemTable(s.recentItems || [], true)}
     </div>`;
@@ -1611,21 +2031,23 @@ async function renderInventory() {
   const canAdd  = ['super_admin', 'user', 'authorized'].includes(state.user.role);
 
   document.getElementById('topbarActions').innerHTML = canAdd
-    ? `<button class="btn btn-primary btn-sm" onclick="openItemForm()">＋ Add Item</button>` : '';
+    ? `<button class="btn btn-primary btn-sm" data-tooltip="Add a new inventory item" onclick="openItemForm()">＋ Add Item</button>` : '';
 
   content.innerHTML = `
     <div class="table-wrap fade-up">
       <div class="table-header">
         <h3>All Items</h3>
-        <div class="search-box">
-          🔍 <input type="text" id="searchInput" placeholder="Search…" oninput="filterInventory()">
+        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
+          <div class="search-box" style="flex:1;min-width:140px">
+            🔍 <input type="text" id="searchInput" placeholder="Search…" oninput="filterInventory()">
+          </div>
+          <select id="filterCat" onchange="filterInventory()"
+            style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;min-width:120px">
+            <option value="">All</option>
+            <option value="Fixed Asset">Fixed Asset</option>
+            <option value="Semi-Asset">Semi-Asset</option>
+          </select>
         </div>
-        <select class="form-group select" id="filterCat" onchange="filterInventory()"
-          style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;">
-          <option value="">All Categories</option>
-          <option value="Fixed Asset">Fixed Asset</option>
-          <option value="Semi-Asset">Semi-Asset</option>
-        </select>
       </div>
       <div id="inventoryTable"><div style="padding:40px;text-align:center"><span class="loader"></span></div></div>
     </div>`;
@@ -1655,7 +2077,38 @@ function buildItemTable(items, compact) {
 
   const canEdit   = ['super_admin', 'authorized'].includes(state.user.role);
   const canDelete = state.user.role === 'super_admin';
+  const isMobile  = window.innerWidth <= 600;
 
+  // ── Mobile: card layout ─────────────────────────────
+  if (isMobile) {
+    return `<ul class="inv-card-list" style="padding:12px">
+      ${items.map(it => `
+        <li class="inv-card">
+          <div class="inv-card-top">
+            <div class="inv-card-icon">${it.category === 'Fixed Asset' ? '🏷️' : '📌'}</div>
+            <div class="inv-card-info">
+              <div class="inv-card-type">${esc(it.type)}</div>
+              <div class="inv-card-desc">${esc(it.description)}</div>
+            </div>
+          </div>
+          <div class="inv-card-meta">
+            <span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span>
+            <span class="inv-card-val ${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
+            ${it.location ? `<span style="font-size:11px;color:var(--text-muted)">📍 ${esc(it.location)}</span>` : ''}
+            ${it.endUser  ? `<span style="font-size:11px;color:var(--text-muted)">👤 ${esc(it.endUser)}</span>`  : ''}
+          </div>
+          <div class="inv-card-bottom">
+            <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁 View</button>
+            <button class="btn btn-ghost btn-sm" onclick="showQR('${it.id}','${esc(it.description)}')">⬛ QR</button>
+            <button class="btn btn-success btn-sm" onclick="addToCart('${it.id}')">＋ List</button>
+            ${canEdit   ? `<button class="btn btn-ghost btn-sm" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
+            ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
+          </div>
+        </li>`).join('')}
+    </ul>`;
+  }
+
+  // ── Desktop: table layout ───────────────────────────
   return `
     <div style="overflow-x:auto">
     <table class="data-table">
@@ -1685,11 +2138,11 @@ function buildItemTable(items, compact) {
             <td>${esc(it.endUser)}</td>
             <td>
               <div class="action-btns">
-                <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁</button>
-                <button class="btn btn-ghost btn-sm" onclick="showQR('${it.id}','${esc(it.description)}')">⬛</button>
-                <button class="btn btn-success btn-sm" onclick="addToCart('${it.id}')">＋ List</button>
-                ${canEdit   ? `<button class="btn btn-ghost btn-sm" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
-                ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
+                <button class="btn btn-ghost btn-sm" data-tooltip="View full item details" onclick="viewItem('${it.id}')">👁</button>
+                <button class="btn btn-ghost btn-sm" data-tooltip="View &amp; print QR code" onclick="showQR('${it.id}','${esc(it.description)}')">⬛</button>
+                <button class="btn btn-success btn-sm" data-tooltip="Add to my selected list" onclick="addToCart('${it.id}')">＋ List</button>
+                ${canEdit   ? `<button class="btn btn-ghost btn-sm" data-tooltip="Edit this item" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
+                ${canDelete ? `<button class="btn btn-danger btn-sm" data-tooltip="Permanently delete this item" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
               </div>
             </td>
           </tr>`).join('')}
@@ -1806,11 +2259,11 @@ function showItemDetail(item) {
     </div>`;
 
   document.getElementById('detailModalFooter').innerHTML = `
-    <button class="btn btn-ghost" onclick="closeModal('detailModal')">Close</button>
-    <button class="btn btn-success" id="detailAddBtn_${item.id}" onclick="addToCart('${item.id}');this.textContent='✅ In List';this.disabled=true">＋ Add to List</button>
-    <button class="btn btn-gold" onclick="exportSinglePDF('${item.id}')">📄 Export PDF</button>
-    <button class="btn btn-ghost" onclick="printDetail()">🖨 Print</button>
-    ${canEdit ? `<button class="btn btn-primary" onclick="closeModal('detailModal');openItemForm('${item.id}')">✏️ Edit</button>` : ''}`;
+    <button class="btn btn-ghost" data-tooltip="Close this panel" onclick="closeModal('detailModal')">Close</button>
+    <button class="btn btn-success" id="detailAddBtn_${item.id}" data-tooltip="Add this item to your list" onclick="addToCart('${item.id}');this.textContent='✅ In List';this.disabled=true">＋ Add to List</button>
+    <button class="btn btn-gold" data-tooltip="Download item details as PDF" data-tooltip="Download item as PDF" onclick="exportSinglePDF('${item.id}')">📄 Export PDF</button>
+    <button class="btn btn-ghost" data-tooltip="Print item details" onclick="printDetail()">🖨 Print</button>
+    ${canEdit ? `<button class="btn btn-primary" data-tooltip="Edit this item's details" onclick="closeModal('detailModal');openItemForm('${item.id}')">✏️ Edit</button>` : ''}`;
 
   openModal('detailModal');
 }
@@ -1882,10 +2335,13 @@ function removeFromCart(id) {
 }
 
 function updateCartBadge() {
+  const n = state.cart.length;
+  // Sidebar badge
   const badge = document.getElementById('cartBadge');
-  if (!badge) return;
-  badge.textContent = state.cart.length;
-  badge.style.display = state.cart.length > 0 ? 'flex' : 'none';
+  if (badge) { badge.textContent = n; badge.style.display = n > 0 ? 'flex' : 'none'; }
+  // Bottom nav badge
+  const bnavBadge = document.getElementById('bnavCartBadge');
+  if (bnavBadge) { bnavBadge.textContent = n; bnavBadge.style.display = n > 0 ? 'flex' : 'none'; }
 }
 
 function renderCart() {
@@ -1911,9 +2367,9 @@ function renderCart() {
   }
 
   document.getElementById('topbarActions').innerHTML =
-    `<button class="btn btn-gold" onclick="exportCartPDF()">📄 Export PDF</button>
-     <button class="btn btn-ghost" onclick="printCart()">🖨 Print</button>
-     <button class="btn btn-danger btn-sm" onclick="clearCart()">Clear All</button>`;
+    `<button class="btn btn-gold" data-tooltip="Export selected items as PDF" onclick="exportCartPDF()">📄 Export PDF</button>
+     <button class="btn btn-ghost" data-tooltip="Print your selected items list" onclick="printCart()">🖨 Print</button>
+     <button class="btn btn-danger btn-sm" data-tooltip="Remove all items from your list" onclick="clearCart()">Clear All</button>`;
 
   content.innerHTML = `
     <div class="table-wrap fade-up">
@@ -1933,8 +2389,8 @@ function renderCart() {
               </div>
             </div>
             <div class="action-btns" style="flex-shrink:0">
-              <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁</button>
-              <button class="btn btn-danger btn-sm" onclick="removeFromCart('${it.id}')">✕</button>
+              <button class="btn btn-ghost btn-sm" data-tooltip="View item details" onclick="viewItem('${it.id}')">👁</button>
+              <button class="btn btn-danger btn-sm" data-tooltip="Remove from list" onclick="removeFromCart('${it.id}')">✕</button>
             </div>
           </li>`).join('')}
       </ul>
@@ -1952,7 +2408,7 @@ async function renderUsers() {
   if (state.user.role !== 'super_admin') { navigate('dashboard'); return; }
 
   document.getElementById('topbarActions').innerHTML =
-    `<button class="btn btn-primary btn-sm" onclick="openUserForm()">＋ Add User</button>`;
+    `<button class="btn btn-primary btn-sm" data-tooltip="Create a new user account" onclick="openUserForm()">＋ Add User</button>`;
 
   const content = document.getElementById('pageContent');
   content.innerHTML = `<div class="table-wrap"><div style="padding:40px;text-align:center"><span class="loader"></span></div></div>`;
@@ -1979,8 +2435,8 @@ async function renderUsers() {
               <td><span class="badge ${u.active?'badge-user':'badge-fixed'}">${u.active ? 'Active' : 'Inactive'}</span></td>
               <td>
                 <div class="action-btns">
-                  <button class="btn btn-ghost btn-sm" onclick="openUserForm('${u.id}')">✏️</button>
-                  ${u.id !== state.user.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUserConfirm('${u.id}')">🗑</button>` : ''}
+                  <button class="btn btn-ghost btn-sm" data-tooltip="Edit user account" onclick="openUserForm('${u.id}')">✏️</button>
+                  ${u.id !== state.user.id ? `<button class="btn btn-danger btn-sm" data-tooltip="Delete this user" onclick="deleteUserConfirm('${u.id}')">🗑</button>` : ''}
                 </div>
               </td>
             </tr>`).join('')}
@@ -2089,7 +2545,7 @@ async function renderReports() {
         <label>Date To</label>
         <input type="date" id="rDateTo">
       </div>
-      <button class="btn btn-primary" onclick="runReport()">🔍 Run Report</button>
+      <button class="btn btn-primary" data-tooltip="Apply filters and generate report" onclick="runReport()">🔍 Run Report</button>
     </div>
     <div id="reportResult"></div>`;
 }
@@ -2138,9 +2594,9 @@ async function runReport() {
     <div class="table-wrap">
       <div class="table-header">
         <h3>Report Results (${items.length} items)</h3>
-        <button class="btn btn-gold btn-sm" onclick="exportReportPDF()">📄 Export PDF</button>
-        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📊 Export CSV</button>
-        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+        <button class="btn btn-gold btn-sm" data-tooltip="Export full report as PDF" onclick="exportReportPDF()">📄 Export PDF</button>
+        <button class="btn btn-ghost btn-sm" data-tooltip="Download report as CSV spreadsheet" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="btn btn-ghost btn-sm" data-tooltip="Print this report" onclick="window.print()">🖨 Print</button>
       </div>
       <div style="overflow-x:auto">
       <table class="data-table">
@@ -2405,8 +2861,8 @@ function renderScanPage(item) {
         ${addedAlready ? '✅ Already in Your List' : '＋ Add to My List'}
       </button>
       <button class="btn-full-action scan-btn-pdf"  onclick="exportSinglePDF('${item.id}')">📄 Export PDF</button>
-      <button class="btn-full-action scan-btn-print" onclick="window.print()">🖨 Print</button>
-      ${canEdit ? `<button class="btn-full-action scan-btn-edit" onclick="goToEdit('${item.id}')">✏️ Edit This Item</button>` : ''}
+      <button class="btn-full-action scan-btn-print" data-tooltip="Print item details" onclick="window.print()">🖨 Print</button>
+      ${canEdit ? `<button class="btn-full-action scan-btn-edit" data-tooltip="Edit this item's details" onclick="goToEdit('${item.id}')">✏️ Edit This Item</button>` : ''}
     `;
     if (addedAlready) {
       document.getElementById('scanAddedNotice').style.display = 'block';
