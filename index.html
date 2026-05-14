@@ -206,11 +206,13 @@ body {
   position: fixed; top: 0; left: 0;
   width: var(--sidebar-w);
   height: 100vh;
+  height: 100dvh; /* dynamic viewport height — accounts for mobile browser chrome */
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
-  z-index: 100;
+  z-index: 110;
   transition: transform 0.3s ease;
+  overflow: hidden; /* prevent sidebar itself from scrolling */
 }
 
 .sidebar-logo {
@@ -235,7 +237,15 @@ body {
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-.sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Ensure nav doesn't push footer offscreen */
+  min-height: 0;
+}
 
 .nav-section { margin-bottom: 24px; }
 .nav-section-label {
@@ -261,7 +271,17 @@ body {
 
 .sidebar-footer {
   padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--border);
+  background: var(--surface); /* ensure it's not transparent */
+  flex-shrink: 0;             /* never compress — always full height */
+  /* On mobile, sit above the bottom nav bar */
+}
+
+@media (max-width: 900px) {
+  .sidebar-footer {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px) + 60px);
+  }
 }
 
 .user-pill {
@@ -612,13 +632,20 @@ body {
   /* Sidebar slides in from left as a drawer */
   .sidebar {
     transform: translateX(-100%);
-    z-index: 110;
+    z-index: 110; /* above bottom-nav (95) and backdrop (99) */
     width: min(var(--sidebar-w), 85vw);
     box-shadow: none;
+    /* Full height including any dynamic toolbar space */
+    height: 100vh;
+    height: 100dvh;
   }
   .sidebar.open {
     transform: translateX(0);
     box-shadow: 8px 0 40px rgba(0,0,0,0.6);
+  }
+  /* Backdrop sits between content and sidebar */
+  .sidebar-backdrop.show {
+    z-index: 105; /* above bottom-nav (95), below sidebar (110) */
   }
 
   .main { margin-left: 0; }
@@ -1571,6 +1598,10 @@ body {
           <textarea id="fDescription" rows="2" placeholder="Detailed description of the item"></textarea>
         </div>
         <div class="form-group">
+          <label>Serial Number</label>
+          <input type="text" id="fSerialNumber" placeholder="e.g. SN-ABC-123456">
+        </div>
+        <div class="form-group">
           <label>Unit Value (₱) *</label>
           <input type="number" id="fUnitValue" placeholder="0.00" min="0" step="0.01" oninput="autoSetCategory()">
         </div>
@@ -2094,6 +2125,7 @@ function buildItemTable(items, compact) {
           <div class="inv-card-meta">
             <span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span>
             <span class="inv-card-val ${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
+            ${it.serialNumber  ? `<span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">S/N: ${esc(it.serialNumber)}</span>`  : ''}
             ${it.location ? `<span style="font-size:11px;color:var(--text-muted)">📍 ${esc(it.location)}</span>` : ''}
             ${it.endUser  ? `<span style="font-size:11px;color:var(--text-muted)">👤 ${esc(it.endUser)}</span>`  : ''}
           </div>
@@ -2117,6 +2149,7 @@ function buildItemTable(items, compact) {
           ${!compact ? '<th>ID</th>' : ''}
           <th>Type</th>
           <th>Description</th>
+          ${!compact ? '<th>Serial #</th>' : ''}
           ${!compact ? '<th>Property #</th>' : ''}
           <th>Category</th>
           <th>Unit Value</th>
@@ -2131,6 +2164,7 @@ function buildItemTable(items, compact) {
             ${!compact ? `<td class="col-id">${it.id.slice(-10)}</td>` : ''}
             <td><strong style="color:var(--text)">${esc(it.type)}</strong></td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.description)}</td>
+            ${!compact ? `<td class="col-id">${esc(it.serialNumber)}</td>` : ''}
             ${!compact ? `<td>${esc(it.propertyNumber)}</td>` : ''}
             <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span></td>
             <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</td>
@@ -2162,6 +2196,7 @@ function openItemForm(id) {
     const item = state.inventory.find(i => i.id === id);
     if (!item) return;
     document.getElementById('fType').value          = item.type || '';
+    document.getElementById('fSerialNumber').value  = item.serialNumber || '';
     document.getElementById('fPropertyNumber').value= item.propertyNumber || '';
     document.getElementById('fDescription').value   = item.description || '';
     document.getElementById('fUnitValue').value     = item.unitValue || '';
@@ -2172,7 +2207,7 @@ function openItemForm(id) {
     document.getElementById('fMR').value            = item.mr || '';
     document.getElementById('fRemarks').value       = item.remarks || '';
   } else {
-    ['fType','fPropertyNumber','fDescription','fUnitValue','fUnitOfMeasure','fLocation','fEndUser','fMR','fRemarks']
+    ['fType','fSerialNumber','fPropertyNumber','fDescription','fUnitValue','fUnitOfMeasure','fLocation','fEndUser','fMR','fRemarks']
       .forEach(f => document.getElementById(f).value = '');
     document.getElementById('fCategory').value = 'Semi-Asset';
   }
@@ -2201,6 +2236,7 @@ async function saveItem() {
     action:         id ? 'updateItem' : 'createItem',
     id,
     type:           document.getElementById('fType').value.trim(),
+    serialNumber:   document.getElementById('fSerialNumber').value.trim(),
     propertyNumber: document.getElementById('fPropertyNumber').value.trim(),
     description:    document.getElementById('fDescription').value.trim(),
     unitValue:      document.getElementById('fUnitValue').value,
@@ -2236,6 +2272,7 @@ function showItemDetail(item) {
   const fields  = [
     ['ID',              item.id],
     ['Type',            item.type],
+    ['Serial Number',   item.serialNumber],
     ['Property #',      item.propertyNumber],
     ['Category',        `<span class="badge ${item.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${item.category}</span>`],
     ['Unit Value',      `₱${fmtNum(item.unitValue)}`],
@@ -2382,6 +2419,7 @@ function renderCart() {
             <div style="flex:1;min-width:0">
               <div class="cart-item-name">${esc(it.type)} — <span style="font-weight:400;color:var(--text-dim)">${esc(it.description)}</span></div>
               <div class="cart-item-sub">
+                ${it.serialNumber   ? `<span style="font-family:var(--font-mono)">S/N: ${esc(it.serialNumber)}</span> &nbsp;·&nbsp; ` : ''}
                 ${it.propertyNumber ? `<span style="font-family:var(--font-mono)">PN: ${esc(it.propertyNumber)}</span> &nbsp;·&nbsp; ` : ''}
                 ${esc(it.location) || '—'} &nbsp;·&nbsp;
                 <span class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
@@ -2602,7 +2640,7 @@ async function runReport() {
       <table class="data-table">
         <thead>
           <tr>
-            <th>ID</th><th>Type</th><th>Description</th><th>Property #</th>
+            <th>ID</th><th>Type</th><th>Description</th><th>Serial #</th><th>Property #</th>
             <th>Category</th><th>Unit Value</th><th>UOM</th>
             <th>Location</th><th>End User</th><th>MR</th>
             <th>Remarks</th><th>Date Created</th><th>Date Updated</th>
@@ -2613,6 +2651,7 @@ async function runReport() {
             <td class="col-id">${it.id.slice(-10)}</td>
             <td>${esc(it.type)}</td>
             <td>${esc(it.description)}</td>
+            <td class="col-id">${esc(it.serialNumber)}</td>
             <td>${esc(it.propertyNumber)}</td>
             <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span></td>
             <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</td>
@@ -2675,9 +2714,9 @@ function exportReportPDF() {
 
   doc.autoTable({
     startY: 32,
-    head: [['Type', 'Description', 'Property #', 'Category', 'Unit Value', 'Location', 'End User', 'MR', 'Date Created']],
+    head: [['Type', 'Description', 'Serial #', 'Property #', 'Category', 'Unit Value', 'Location', 'End User', 'MR', 'Date Created']],
     body: data.items.map(it => [
-      it.type, it.description, it.propertyNumber, it.category,
+      it.type, it.description, it.serialNumber, it.propertyNumber, it.category,
       '₱' + fmtNum(it.unitValue), it.location, it.endUser, it.mr, fmtDate(it.dateCreated)
     ]),
     styles: { fontSize: 8, cellPadding: 3 },
@@ -2701,7 +2740,7 @@ function exportSinglePDF(id) {
 
   const rows = [
     ['ID', item.id], ['Type', item.type], ['Description', item.description],
-    ['Property #', item.propertyNumber], ['Category', item.category],
+    ['Serial Number', item.serialNumber], ['Property #', item.propertyNumber], ['Category', item.category],
     ['Unit Value', '₱' + fmtNum(item.unitValue)], ['Unit of Measure', item.unitOfMeasure],
     ['Location', item.location], ['End User', item.endUser], ['MR', item.mr],
     ['Remarks', item.remarks], ['Date Created', fmtDate(item.dateCreated)],
@@ -2732,8 +2771,8 @@ function exportCartPDF() {
 
   doc.autoTable({
     startY: 26,
-    head: [['Type', 'Description', 'Property #', 'Category', 'Unit Value', 'Location', 'End User']],
-    body: items.map(it => [it.type, it.description, it.propertyNumber, it.category,
+    head: [['Type', 'Description', 'Serial #', 'Property #', 'Category', 'Unit Value', 'Location', 'End User']],
+    body: items.map(it => [it.type, it.description, it.serialNumber, it.propertyNumber, it.category,
       '₱' + fmtNum(it.unitValue), it.location, it.endUser]),
     styles: { fontSize: 9 },
     headStyles: { fillColor: [26, 115, 232] },
@@ -2747,9 +2786,9 @@ function exportCSV() {
   const data = window._reportData;
   if (!data) { toast('Run a report first.', 'info'); return; }
 
-  const headers = ['ID','Type','Description','Property #','Category','Unit Value','UOM','Location','End User','MR','Remarks','Date Created','Date Updated'];
+  const headers = ['ID','Type','Description','Serial #','Property #','Category','Unit Value','UOM','Location','End User','MR','Remarks','Date Created','Date Updated'];
   const rows = data.items.map(it => [
-    it.id, it.type, it.description, it.propertyNumber, it.category,
+    it.id, it.type, it.description, it.serialNumber, it.propertyNumber, it.category,
     it.unitValue, it.unitOfMeasure, it.location, it.endUser, it.mr,
     it.remarks, fmtDate(it.dateCreated), fmtDate(it.dateUpdated)
   ].map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','));
@@ -2826,6 +2865,7 @@ function renderScanPage(item) {
 
   // Fields
   const fieldDefs = [
+    ['🔢', 'Serial Number',   item.serialNumber],
     ['📋', 'Property Number', item.propertyNumber],
     ['🏷️', 'Category',        item.category],
     ['💰', 'Unit Value',      item.unitValue ? '₱' + fmtNum(item.unitValue) : '—'],
