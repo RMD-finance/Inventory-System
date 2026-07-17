@@ -2059,6 +2059,40 @@ async function api(params) {
   }
 }
 
+// ── API POST (for large payloads like batch upload) ────
+// Sends JSON body as text/plain to avoid CORS preflight.
+// Apps Script reads it from e.postData.contents.
+async function apiPost(params) {
+  if (state.token) params.token = state.token;
+  try {
+    const res = await fetch(API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' }, // text/plain = no CORS preflight
+      body:    JSON.stringify(params),
+      redirect: 'follow',
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (_) {
+      const m = text.match(/({.*}|\[.*\])/s);
+      data = m ? JSON.parse(m[1]) : { success: false, error: 'Invalid response: ' + text.slice(0, 120) };
+    }
+    if (!data.success && data.error === 'Unauthorized') {
+      toast('Session expired. Please log in again.', 'error');
+      doLogout();
+    }
+    return data;
+  } catch (e) {
+    // Detailed diagnosis for common failure modes
+    let hint = '';
+    if (e.message.includes('fetch')) hint = ' — Check that your Apps Script is deployed with access set to "Anyone".';
+    if (location.protocol === 'file:')  hint = ' — Camera and POST requests require HTTPS. Host this file on Netlify or GitHub Pages.';
+    toast('Upload error: ' + e.message + hint, 'error');
+    return { success: false, error: e.message };
+  }
+}
+
 // ── AUTH ───────────────────────────────────────────────
 async function doLogin() {
   const username = document.getElementById('loginUser').value.trim();
@@ -3936,7 +3970,9 @@ async function confirmBatchImport() {
   const payload = BATCH.validItems.map(({ rowNum, _errors, _valid, ...item }) => item);
 
   try {
-    const res = await api({
+    // Use apiPost (not api) — the items JSON can be very large
+    // and would exceed the GET query-string URL length limit.
+    const res = await apiPost({
       action: 'batchCreateItems',
       items:  JSON.stringify(payload),
     });
