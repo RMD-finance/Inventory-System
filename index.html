@@ -1380,6 +1380,155 @@ body {
   [data-tooltip]::before { display: none; }
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   BATCH UPLOAD PAGE
+═══════════════════════════════════════════════════════ */
+
+/* Upload drop-zone */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--surface);
+  position: relative;
+}
+.upload-zone:hover,
+.upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(79,142,247,0.06);
+}
+.upload-zone input[type=file] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon {
+  font-size: 48px; display: block; margin-bottom: 16px;
+  filter: grayscale(0.3);
+}
+.upload-zone h3 {
+  font-family: var(--font-head); font-size: 18px;
+  margin-bottom: 8px;
+}
+.upload-zone p { font-size: 13px; color: var(--text-muted); }
+.upload-zone .btn { pointer-events: none; margin-top: 16px; }
+
+/* Tutorial steps */
+.tutorial-steps { display: flex; flex-direction: column; gap: 0; }
+.tutorial-step {
+  display: flex; gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.tutorial-step:last-child { border-bottom: none; }
+.tutorial-step-num {
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-size: 15px; font-weight: 800;
+  color: white;
+}
+.tutorial-step-content h4 {
+  font-family: var(--font-head); font-size: 14px; font-weight: 700;
+  margin-bottom: 4px;
+}
+.tutorial-step-content p  { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+.tutorial-step-content code {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 1px 6px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--accent);
+}
+
+/* Column reference table */
+.col-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.col-table th {
+  background: var(--surface2); padding: 8px 12px;
+  text-align: left; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border);
+}
+.col-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+.col-table tr:last-child td { border-bottom: none; }
+.col-table tr:hover td { background: rgba(255,255,255,0.02); }
+.col-req  { color: var(--red)   !important; font-weight: 700; }
+.col-opt  { color: var(--text-muted) !important; }
+
+/* Preview table */
+.preview-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 20px;
+}
+.preview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; gap: 10px;
+}
+.preview-header h3 { font-family: var(--font-head); font-size: 15px; font-weight: 700; }
+.preview-scroller { overflow-x: auto; max-height: 380px; overflow-y: auto; }
+
+/* Progress bar */
+.upload-progress {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  display: none;
+}
+.progress-bar-track {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 16px 0 8px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* Result summary cards */
+.result-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin: 16px 0;
+}
+.result-card {
+  background: var(--surface2); border-radius: var(--radius-sm);
+  padding: 16px; text-align: center;
+}
+.result-card .rval { font-family: var(--font-head); font-size: 28px; font-weight: 800; }
+.result-card .rlbl { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Error table */
+.error-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+.error-table th { background: rgba(248,113,113,0.15); color: var(--red); padding: 8px 12px; text-align: left; }
+.error-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+
+/* Warning pill */
+.warn-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(240,180,41,0.12); border: 1px solid rgba(240,180,41,0.3);
+  border-radius: 999px; padding: 4px 12px;
+  font-size: 11px; color: var(--gold); font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .result-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .result-card .rval { font-size: 22px; }
+  .tutorial-step { flex-direction: column; gap: 10px; }
+}
+
 </style>
 </head>
 <body>
@@ -1439,6 +1588,9 @@ body {
         </div>
         <div class="nav-item" onclick="navigate('inventory')" id="nav-inventory">
           <span class="icon">📋</span> Inventory
+        </div>
+        <div class="nav-item" onclick="navigate('batch')" id="nav-batch">
+          <span class="icon">📤</span> Batch Upload
         </div>
         <div class="nav-item" onclick="navigate('cart')" id="nav-cart">
           <span class="icon">🛒</span> My List <span id="cartBadge" class="cart-badge" style="display:none">0</span>
@@ -1976,6 +2128,7 @@ function navigate(page) {
   const titles = {
     dashboard: 'Dashboard',
     inventory: 'Inventory',
+    batch:     'Batch Upload',
     cart:      'My List',
     users:     'User Management',
     reports:   'Reports',
@@ -1987,6 +2140,7 @@ function navigate(page) {
   const pages = {
     dashboard: renderDashboard,
     inventory: renderInventory,
+    batch:     renderBatchUpload,
     cart:      renderCart,
     users:     renderUsers,
     reports:   renderReports,
@@ -3261,6 +3415,670 @@ function stopCamera() {
 function closeScanner() {
   stopCamera();
   closeModal('scannerModal');
+}
+
+// ═══════════════════════════════════════════════════════
+// BATCH UPLOAD — Excel → Inventory
+// Uses SheetJS (bundled via CDN) to parse .xlsx client-side,
+// validates each row, shows a preview, then POSTs valid rows
+// to the batchCreateItems endpoint.
+// ═══════════════════════════════════════════════════════
+
+// Column header → internal field mapping
+// Matches the Excel template column headers exactly
+const BATCH_COL_MAP = {
+  'type of item':    'type',
+  'type':            'type',
+  'description':     'description',
+  'serial number':   'serialNumber',
+  'serial #':        'serialNumber',
+  's/n':             'serialNumber',
+  'property number': 'propertyNumber',
+  'property #':      'propertyNumber',
+  'unit of measure': 'unitOfMeasure',
+  'uom':             'unitOfMeasure',
+  'unit value':      'unitValue',
+  'value':           'unitValue',
+  'category':        'category',
+  'location':        'location',
+  'end user':        'endUser',
+  'mr (assigned)':   'mr',
+  'mr':              'mr',
+  'assigned to':     'mr',
+  'remarks':         'remarks',
+  'notes':           'remarks',
+};
+
+// State for the batch upload page
+const BATCH = {
+  parsedItems: [],   // items parsed from Excel (all rows)
+  validItems:  [],   // rows that passed client-side validation
+  errors:      [],   // client-side validation errors
+  fileName:    '',
+};
+
+// ── Render the Batch Upload page ──────────────────────
+function renderBatchUpload() {
+  const content = document.getElementById('pageContent');
+  document.getElementById('topbarActions').innerHTML =
+    `<button class="btn btn-ghost btn-sm" data-tooltip="Download the Excel template" onclick="downloadTemplate()">
+       📥 Download Template
+     </button>`;
+
+  content.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start" id="batchGrid">
+
+      <!-- LEFT: Upload area -->
+      <div>
+        <!-- Drop Zone -->
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="batchFileInput" accept=".xlsx,.xls"
+            onchange="handleFileSelect(this.files[0])"
+            ondragover="event.preventDefault();document.getElementById('uploadZone').classList.add('drag-over')"
+            ondragleave="document.getElementById('uploadZone').classList.remove('drag-over')"
+            ondrop="event.preventDefault();document.getElementById('uploadZone').classList.remove('drag-over');handleFileSelect(event.dataTransfer.files[0])">
+          <span class="upload-icon">📂</span>
+          <h3>Drop your Excel file here</h3>
+          <p>or click to browse &nbsp;·&nbsp; accepts <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:12px">.xlsx</code> only</p>
+          <button class="btn btn-primary" style="margin-top:16px;pointer-events:none">📤 Choose File</button>
+        </div>
+
+        <!-- Progress -->
+        <div class="upload-progress" id="uploadProgress">
+          <div class="loader" style="width:28px;height:28px;border-width:3px"></div>
+          <p id="uploadProgressText" style="margin-top:12px;color:var(--text-dim)">Parsing file…</p>
+          <div class="progress-bar-track"><div class="progress-bar-fill" id="uploadProgressBar" style="width:0%"></div></div>
+          <p id="uploadProgressSub" style="font-size:11px;color:var(--text-muted)">Please wait</p>
+        </div>
+
+        <!-- Preview + result area -->
+        <div id="batchPreviewArea"></div>
+      </div>
+
+      <!-- RIGHT: Tutorial panel -->
+      <div>
+        <div class="table-wrap" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+            <h3 style="font-family:var(--font-head);font-size:15px;font-weight:700">📖 How to Upload</h3>
+          </div>
+          <div style="padding:16px 20px">
+            <div class="tutorial-steps">
+              <div class="tutorial-step">
+                <div class="tutorial-step-num">1</div>
+                <div class="tutorial-step-content">
+                  <h4>Download the template</h4>
+                  <p>Click <strong>Download Template</strong> at the top right. Open the file in Excel or Google Sheets.</p>
+                </div>
+              </div>
+              <div class="tutorial-step">
+                <div class="tutorial-step-num">2</div>
+                <div class="tutorial-step-content">
+                  <h4>Fill in your items</h4>
+                  <p>Start from <strong>Row 4</strong> — one item per row. Rows 1–3 are headers and the example (do not edit). Required fields: <code>Type of Item</code> and <code>Description</code> and <code>Unit Value</code>.</p>
+                </div>
+              </div>
+              <div class="tutorial-step">
+                <div class="tutorial-step-num">3</div>
+                <div class="tutorial-step-content">
+                  <h4>Unit Value — numbers only</h4>
+                  <p>Write <code>52000</code> not <code>₱52,000</code>. No currency symbol, no commas. Category is auto-set: ≤₱50,000 → Semi-Asset, >₱50,000 → Fixed Asset.</p>
+                </div>
+              </div>
+              <div class="tutorial-step">
+                <div class="tutorial-step-num">4</div>
+                <div class="tutorial-step-content">
+                  <h4>Save as .xlsx and upload</h4>
+                  <p>File → Save As → <strong>Excel Workbook (.xlsx)</strong>. Then drop it here or click Choose File.</p>
+                </div>
+              </div>
+              <div class="tutorial-step">
+                <div class="tutorial-step-num">5</div>
+                <div class="tutorial-step-content">
+                  <h4>Review the preview</h4>
+                  <p>Check the table that appears. Rows with ❌ errors are highlighted — fix them in Excel and re-upload, or click <strong>Import Valid Rows</strong> to skip errors and import only the valid ones.</p>
+                </div>
+              </div>
+              <div class="tutorial-step">
+                <div class="tutorial-step-num">6</div>
+                <div class="tutorial-step-content">
+                  <h4>Confirm the import</h4>
+                  <p>Click <strong>Import Valid Rows</strong>. A summary shows how many were added and how many were skipped.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column Reference -->
+          <div style="padding:0 20px 4px;border-top:1px solid var(--border)">
+            <p style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;padding:14px 0 8px">Column Reference</p>
+            <table class="col-table">
+              <thead><tr><th>Column</th><th>Required?</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>Type of Item</td>     <td class="col-req">Required</td><td>e.g. Laptop, Chair</td></tr>
+                <tr><td>Description</td>       <td class="col-req">Required</td><td>Full descriptive name</td></tr>
+                <tr><td>Serial Number</td>     <td class="col-opt">Optional</td><td>Manufacturer S/N</td></tr>
+                <tr><td>Property Number</td>   <td class="col-opt">Optional</td><td>Internal PN tag</td></tr>
+                <tr><td>Unit of Measure</td>   <td class="col-opt">Optional</td><td>pcs / sets / units</td></tr>
+                <tr><td>Unit Value</td>         <td class="col-req">Required</td><td>Numbers only, no ₱</td></tr>
+                <tr><td>Category</td>           <td class="col-opt">Optional</td><td>Auto from Unit Value</td></tr>
+                <tr><td>Location</td>           <td class="col-opt">Optional</td><td>Room / floor / building</td></tr>
+                <tr><td>End User</td>           <td class="col-opt">Optional</td><td>Person using the item</td></tr>
+                <tr><td>MR (Assigned)</td>     <td class="col-opt">Optional</td><td>Accountable person</td></tr>
+                <tr><td>Remarks</td>            <td class="col-opt">Optional</td><td>Extra notes</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Common errors -->
+          <div style="padding:14px 20px 20px;border-top:1px solid var(--border)">
+            <p style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">⚠️ Common Errors</p>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--text-dim)">
+              <p>❌ <strong>₱ or commas</strong> in Unit Value → write <code>52000</code></p>
+              <p>❌ <strong>Editing row 1</strong> (column headers) → leave them as-is</p>
+              <p>❌ <strong>Blank Type or Description</strong> → rows will be skipped</p>
+              <p>❌ <strong>Saving as CSV or .xls</strong> → use <code>.xlsx</code> only</p>
+              <p>❌ <strong>More than 100 rows</strong> → split into multiple files</p>
+              <p>❌ <strong>Merged cells</strong> → one value per cell only</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: collapse right panel -->
+    <style>
+      @media(max-width:900px){
+        #batchGrid { grid-template-columns:1fr !important; }
+      }
+    </style>
+  `;
+}
+
+// ── Download template ──────────────────────────────────────────
+function downloadTemplate() {
+  // The template .xlsx is served from the same directory
+  const a = document.createElement('a');
+  a.href     = 'InvTrack_Batch_Upload_Template.xlsx';
+  a.download = 'InvTrack_Batch_Upload_Template.xlsx';
+  a.click();
+}
+
+// ── File selected ─────────────────────────────────────────────
+async function handleFileSelect(file) {
+  if (!file) return;
+
+  // Validate file type
+  if (!file.name.match(/\.xlsx?$/i)) {
+    toast('Please select an Excel file (.xlsx)', 'error');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toast('File is too large. Maximum is 5 MB.', 'error');
+    return;
+  }
+
+  BATCH.fileName = file.name;
+  showUploadProgress('Reading file…', 10);
+
+  try {
+    const data = await readFileAsArrayBuffer(file);
+    showUploadProgress('Parsing Excel…', 40);
+
+    // Load SheetJS dynamically if not present
+    if (typeof XLSX === 'undefined') {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    }
+
+    const workbook  = XLSX.read(data, { type: 'array' });
+    showUploadProgress('Reading sheet…', 60);
+
+    // Find the "Inventory Upload" sheet (case-insensitive)
+    const sheetName = workbook.SheetNames.find(n =>
+      n.toLowerCase().includes('inventory') || n.toLowerCase().includes('upload')
+    ) || workbook.SheetNames[0];
+
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+      hideUploadProgress();
+      toast('Could not find the Inventory Upload sheet in this file.', 'error');
+      return;
+    }
+
+    // Convert to array of arrays (raw)
+    const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    showUploadProgress('Validating rows…', 80);
+
+    parseAndValidate(raw);
+    showUploadProgress('Done!', 100);
+    setTimeout(hideUploadProgress, 400);
+
+  } catch (err) {
+    hideUploadProgress();
+    toast('Error reading file: ' + err.message, 'error');
+  }
+}
+
+// ── Parse rows and validate ────────────────────────────────────
+function parseAndValidate(raw) {
+  BATCH.parsedItems = [];
+  BATCH.validItems  = [];
+  BATCH.errors      = [];
+
+  if (!raw || raw.length < 2) {
+    showBatchError('The file appears to be empty or has no data.');
+    return;
+  }
+
+  // Find the header row — the row that contains "Type of Item" or "Description"
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(raw.length, 6); i++) {
+    const rowStr = raw[i].join('|').toLowerCase();
+    if (rowStr.includes('type') && rowStr.includes('description')) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1) {
+    showBatchError('Could not find the column header row. Make sure Row 1 contains the column headers from the template.');
+    return;
+  }
+
+  // Build column index map from headers
+  const headers = raw[headerRowIdx].map(h => String(h).trim().toLowerCase().replace(/\s*\*\s*$/, ''));
+  const colMap  = {};
+  headers.forEach((h, i) => {
+    const field = BATCH_COL_MAP[h];
+    if (field) colMap[field] = i;
+  });
+
+  // Warn if required columns are missing
+  const missingCols = [];
+  ['type','description','unitValue'].forEach(f => {
+    if (colMap[f] === undefined) missingCols.push(f);
+  });
+  if (missingCols.length > 0) {
+    showBatchError(
+      `Missing required columns: <strong>${missingCols.join(', ')}</strong>.<br>` +
+      `Make sure you're using the InvTrack template and that column headers in Row 1 are not modified.`
+    );
+    return;
+  }
+
+  // Skip rows until after the header (and the notes/example rows)
+  // Strategy: start from headerRowIdx + 1, skip rows where Type or Description is blank
+  // (because rows 2 & 3 are the notes and example rows)
+  // But user may have deleted the example — so we just start from headerRowIdx + 1
+  // and treat every non-empty row as data
+  let dataStartIdx = headerRowIdx + 1;
+
+  // Skip the sub-header note row (row 2 in template) if it doesn't look like real data
+  if (dataStartIdx < raw.length) {
+    const nextRow = raw[dataStartIdx];
+    const nextType = String(nextRow[colMap['type']] || '').trim().toLowerCase();
+    // If the next row looks like a description/notes row, skip it
+    if (nextType.startsWith('what kind') || nextType.startsWith('type of') || nextType === 'type of item') {
+      dataStartIdx++;
+    }
+  }
+
+  // Also skip the example row (yellow row = "Laptop" example)
+  // We detect it by checking if all values look like example/sample data
+  // Just process everything and let validation decide
+
+  let dataRows = raw.slice(dataStartIdx);
+
+  // Remove completely empty rows
+  dataRows = dataRows.filter(row =>
+    row.some(cell => String(cell || '').trim() !== '')
+  );
+
+  if (dataRows.length === 0) {
+    showBatchError('No data rows found. Please fill in at least one item below the header row.');
+    return;
+  }
+
+  if (dataRows.length > 100) {
+    toast(`File has ${dataRows.length} rows — only first 100 will be processed.`, 'info');
+    dataRows = dataRows.slice(0, 100);
+  }
+
+  // Parse each data row
+  const VALID_CATS = ['fixed asset', 'semi-asset', 'semi asset', ''];
+
+  dataRows.forEach((row, idx) => {
+    const rowNum = idx + 1;
+    const get    = field => String(row[colMap[field]] !== undefined ? row[colMap[field]] : '').trim();
+
+    const item = {
+      rowNum,
+      type:           get('type'),
+      description:    get('description'),
+      serialNumber:   get('serialNumber'),
+      propertyNumber: get('propertyNumber'),
+      unitOfMeasure:  get('unitOfMeasure') || 'pcs',
+      unitValue:      get('unitValue'),
+      category:       get('category'),
+      location:       get('location'),
+      endUser:        get('endUser'),
+      mr:             get('mr'),
+      remarks:        get('remarks'),
+      _errors:        [],
+      _valid:         true,
+    };
+
+    // Skip completely empty rows silently
+    if (!item.type && !item.description && !item.unitValue) return;
+
+    // ── Validate ───────────────────────────────────
+    if (!item.type) {
+      item._errors.push('"Type of Item" is required');
+      item._valid = false;
+    }
+    if (!item.description) {
+      item._errors.push('"Description" is required');
+      item._valid = false;
+    }
+
+    // Unit value: strip symbols and parse
+    const rawVal = String(item.unitValue).replace(/[₱,\s]/g, '');
+    const numVal  = parseFloat(rawVal);
+    if (!rawVal || isNaN(numVal) || numVal <= 0) {
+      item._errors.push('"Unit Value" must be a number > 0 (no ₱ or commas)');
+      item._valid = false;
+    } else {
+      item.unitValue = numVal;
+    }
+
+    // Category validation
+    const catLower = item.category.toLowerCase();
+    if (item.category && !VALID_CATS.includes(catLower)) {
+      item._errors.push(`"Category" must be "Fixed Asset" or "Semi-Asset" (got: "${item.category}")`);
+      item._valid = false;
+    } else if (!item.category || catLower === '') {
+      // Auto-set
+      item.category = numVal > 50000 ? 'Fixed Asset' : 'Semi-Asset';
+    } else {
+      // Normalise casing
+      item.category = catLower === 'fixed asset' ? 'Fixed Asset' : 'Semi-Asset';
+    }
+
+    BATCH.parsedItems.push(item);
+    if (item._valid) {
+      BATCH.validItems.push(item);
+    } else {
+      BATCH.errors.push(...item._errors.map(e => ({ row: rowNum, message: e })));
+    }
+  });
+
+  renderBatchPreview();
+}
+
+// ── Render preview table ───────────────────────────────────────
+function renderBatchPreview() {
+  const area    = document.getElementById('batchPreviewArea');
+  const total   = BATCH.parsedItems.length;
+  const valid   = BATCH.validItems.length;
+  const invalid = total - valid;
+
+  if (total === 0) {
+    area.innerHTML = `<div class="empty-state" style="margin-top:16px">
+      <span class="icon">📭</span>
+      <h3>No data rows found</h3>
+      <p>Make sure you filled in rows below the header row.</p>
+    </div>`;
+    return;
+  }
+
+  const statusPills = `
+    <span class="badge badge-user" style="font-size:12px">✅ ${valid} valid</span>
+    ${invalid > 0 ? `<span class="badge badge-fixed" style="font-size:12px">⚠️ ${invalid} with errors</span>` : ''}
+    <span style="font-size:12px;color:var(--text-muted)">${BATCH.fileName}</span>
+  `;
+
+  const importBtn = valid > 0
+    ? `<button class="btn btn-primary" onclick="confirmBatchImport()"
+         data-tooltip="Upload ${valid} valid rows to inventory">
+         📤 Import ${valid} Valid Row${valid !== 1 ? 's' : ''}
+       </button>`
+    : `<button class="btn btn-danger" disabled style="opacity:0.5">No valid rows</button>`;
+
+  // Build preview table rows
+  const tableRows = BATCH.parsedItems.map(it => {
+    const rowBg  = it._valid ? '' : 'background:rgba(248,113,113,0.07)';
+    const status = it._valid
+      ? '<span style="color:var(--green);font-size:16px">✅</span>'
+      : `<span style="color:var(--red);font-size:16px" title="${esc(it._errors.join('\n'))}">❌</span>`;
+    const errHint = it._valid ? '' : `<br><span style="font-size:10px;color:var(--red)">${esc(it._errors.join(' · '))}</span>`;
+
+    return `<tr style="${rowBg}">
+      <td style="text-align:center">${it.rowNum}</td>
+      <td style="text-align:center">${status}</td>
+      <td><strong style="color:var(--text)">${esc(it.type)}</strong>${errHint}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.description)}</td>
+      <td class="col-id">${esc(it.serialNumber)}</td>
+      <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}" style="font-size:10px">${esc(it.category)}</span></td>
+      <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}" style="font-family:var(--font-mono);font-size:12px">
+        ${it._valid ? '₱'+fmtNum(it.unitValue) : esc(String(it.unitValue))}
+      </td>
+      <td>${esc(it.location)}</td>
+      <td>${esc(it.endUser)}</td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="preview-wrap">
+      <div class="preview-header">
+        <div>
+          <h3>Preview</h3>
+          <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">${statusPills}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="resetBatchUpload()" data-tooltip="Clear and upload a different file">↺ Reset</button>
+          ${importBtn}
+        </div>
+      </div>
+
+      ${invalid > 0 ? `
+        <div style="padding:12px 20px;background:rgba(248,113,113,0.07);border-bottom:1px solid var(--border)">
+          <p style="font-size:12px;color:var(--red);font-weight:600">
+            ⚠️ ${invalid} row${invalid!==1?'s':''} have errors and will be skipped.
+            Fix them in Excel and re-upload, or proceed with only the valid rows.
+          </p>
+          ${BATCH.errors.slice(0,5).map(e =>
+            `<p style="font-size:11px;color:var(--text-muted);margin-top:2px">Row ${e.row}: ${esc(e.message)}</p>`
+          ).join('')}
+          ${BATCH.errors.length > 5 ? `<p style="font-size:11px;color:var(--text-muted)">…and ${BATCH.errors.length - 5} more</p>` : ''}
+        </div>` : ''}
+
+      <div class="preview-scroller">
+        <table class="data-table" style="font-size:12px">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th style="width:40px">OK</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Serial #</th>
+              <th>Category</th>
+              <th>Unit Value</th>
+              <th>Location</th>
+              <th>End User</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ── Confirm and send to backend ───────────────────────────────
+async function confirmBatchImport() {
+  if (BATCH.validItems.length === 0) {
+    toast('No valid rows to import.', 'error');
+    return;
+  }
+
+  // Show progress
+  const area = document.getElementById('batchPreviewArea');
+  const prev = area.innerHTML;
+
+  area.innerHTML = `
+    <div class="upload-progress" style="display:block;margin-top:20px">
+      <div class="loader" style="width:28px;height:28px;border-width:3px"></div>
+      <p style="margin-top:12px;color:var(--text-dim)">Uploading ${BATCH.validItems.length} items…</p>
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="uploadProgressBar" style="width:30%"></div></div>
+      <p style="font-size:11px;color:var(--text-muted)">Please wait — do not close this page</p>
+    </div>`;
+
+  // Prepare payload — strip internal _errors/_valid/_rowNum fields
+  const payload = BATCH.validItems.map(({ rowNum, _errors, _valid, ...item }) => item);
+
+  try {
+    const res = await api({
+      action: 'batchCreateItems',
+      items:  JSON.stringify(payload),
+    });
+
+    if (res.success) {
+      showBatchResult(res);
+    } else {
+      area.innerHTML = prev;
+      toast('Upload failed: ' + (res.error || 'Unknown error'), 'error');
+    }
+  } catch (err) {
+    area.innerHTML = prev;
+    toast('Upload error: ' + err.message, 'error');
+  }
+}
+
+// ── Show final result ─────────────────────────────────────────
+function showBatchResult(res) {
+  const area = document.getElementById('batchPreviewArea');
+  const allOk = res.skipped === 0;
+
+  const errorRows = (res.errors || []).map(e =>
+    `<tr>
+      <td>Row ${e.row}</td>
+      <td>${esc(e.field || '')}</td>
+      <td style="color:var(--red)">${esc(e.message)}</td>
+    </tr>`
+  ).join('');
+
+  area.innerHTML = `
+    <div class="preview-wrap" style="margin-top:16px">
+      <div class="preview-header">
+        <div>
+          <h3>${allOk ? '🎉 Upload Complete!' : '⚠️ Upload Complete with Errors'}</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:4px">${BATCH.fileName}</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="resetBatchUpload()">↺ Upload Another</button>
+          <button class="btn btn-primary btn-sm" onclick="navigate('inventory')">📋 View Inventory</button>
+        </div>
+      </div>
+
+      <div style="padding:20px">
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="rval" style="color:var(--text)">${res.total}</div>
+            <div class="rlbl">Total Rows</div>
+          </div>
+          <div class="result-card">
+            <div class="rval" style="color:var(--green)">${res.inserted}</div>
+            <div class="rlbl">Imported</div>
+          </div>
+          <div class="result-card">
+            <div class="rval" style="color:${res.skipped > 0 ? 'var(--red)' : 'var(--text-muted)'}">${res.skipped}</div>
+            <div class="rlbl">Skipped</div>
+          </div>
+        </div>
+
+        ${res.skipped > 0 && errorRows ? `
+          <p style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">Skipped Rows (fix and re-upload):</p>
+          <div style="overflow-x:auto">
+            <table class="error-table">
+              <thead><tr><th>Row</th><th>Field</th><th>Error</th></tr></thead>
+              <tbody>${errorRows}</tbody>
+            </table>
+          </div>` : ''}
+
+        ${allOk ? `
+          <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:var(--radius-sm);padding:14px;margin-top:12px">
+            <p style="font-size:13px;color:var(--green)">✅ All ${res.inserted} items were successfully added to your inventory!</p>
+          </div>` : ''}
+      </div>
+    </div>`;
+
+  // Clear batch state
+  BATCH.parsedItems = [];
+  BATCH.validItems  = [];
+  BATCH.errors      = [];
+
+  // Refresh inventory cache
+  state.inventory = [];
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function showUploadProgress(text, pct) {
+  const z = document.getElementById('uploadZone');
+  const p = document.getElementById('uploadProgress');
+  if (z) z.style.display = 'none';
+  if (p) {
+    p.style.display = 'block';
+    document.getElementById('uploadProgressText').textContent = text;
+    document.getElementById('uploadProgressBar').style.width  = pct + '%';
+    document.getElementById('uploadProgressSub').textContent  = pct < 100 ? 'Please wait…' : 'Done!';
+  }
+}
+
+function hideUploadProgress() {
+  const z = document.getElementById('uploadZone');
+  const p = document.getElementById('uploadProgress');
+  if (z) z.style.display = 'block';
+  if (p) p.style.display = 'none';
+}
+
+function showBatchError(msg) {
+  const area = document.getElementById('batchPreviewArea');
+  if (area) {
+    area.innerHTML = `
+      <div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);
+                  border-radius:var(--radius);padding:20px;margin-top:16px">
+        <p style="color:var(--red);font-weight:600;margin-bottom:6px">❌ Could not parse file</p>
+        <p style="font-size:13px;color:var(--text-dim)">${msg}</p>
+        <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="resetBatchUpload()">↺ Try Again</button>
+      </div>`;
+  }
+  hideUploadProgress();
+}
+
+function resetBatchUpload() {
+  BATCH.parsedItems = [];
+  BATCH.validItems  = [];
+  BATCH.errors      = [];
+  BATCH.fileName    = '';
+  renderBatchUpload();
+}
+
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(new Uint8Array(e.target.result));
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload  = resolve;
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
 }
 
 </script>
