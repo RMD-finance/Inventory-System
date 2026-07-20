@@ -1949,7 +1949,7 @@ body {
 // ╔══════════════════════════════════════════════════════
 // ║ CONFIGURATION — REPLACE WITH YOUR DEPLOYED URL
 // ╚══════════════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbxIAEeLjmad3V4HifsBFABeq1vwV07rs6IEkudtDcZKHo88JcTR-6s6BZEc1-4rjw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw84Vu0X2UfdWoGTJu9PMleOilJ1poIjh8tUBZxkuhveT6nGiq3mCYHKPFgMHHrkNw/exec';
 
 // ── APP STATE ──────────────────────────────────────────
 const state = {
@@ -2059,36 +2059,72 @@ async function api(params) {
   }
 }
 
-// ── API POST (for large payloads like batch upload) ────
-// Sends JSON body as text/plain to avoid CORS preflight.
-// Apps Script reads it from e.postData.contents.
+// ── API POST (batch upload only) ──────────────────────
+// Google Apps Script 303-redirects POST requests, and browsers
+// convert POST→GET on redirect, dropping the body. Fix:
+//   • action + token go in the URL query string (survive redirect)
+//   • items JSON goes in the body as text/plain (no CORS preflight)
+// Apps Script reads action/token from e.parameter and
+// reads items from e.postData.contents.
 async function apiPost(params) {
   if (state.token) params.token = state.token;
+
+  // Separate the large payload from the routing params
+  const { items, action, token, ...rest } = params;
+
+  // Build query string with action + token (and any small params)
+  const qs = Object.entries({ action, token, ...rest })
+    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
+    .join('&');
+
+  const url = API_URL + '?' + qs;
+
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(url, {
       method:  'POST',
-      headers: { 'Content-Type': 'text/plain' }, // text/plain = no CORS preflight
-      body:    JSON.stringify(params),
+      // text/plain = "simple request" — no CORS preflight OPTIONS call
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      // Body contains ONLY the items array so Apps Script can parse it
+      body: JSON.stringify({ items }),
       redirect: 'follow',
+      mode: 'cors',
     });
+
     const text = await res.text();
     let data;
-    try { data = JSON.parse(text); }
-    catch (_) {
-      const m = text.match(/({.*}|\[.*\])/s);
-      data = m ? JSON.parse(m[1]) : { success: false, error: 'Invalid response: ' + text.slice(0, 120) };
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      // Apps Script sometimes wraps JSON — strip wrapper and retry
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) {
+        try { data = JSON.parse(m[0]); } catch(__) { data = null; }
+      }
+      if (!data) {
+        console.error('Raw response:', text.slice(0, 300));
+        return { success: false, error: 'Server returned unexpected response. Check Apps Script logs.' };
+      }
     }
+
     if (!data.success && data.error === 'Unauthorized') {
       toast('Session expired. Please log in again.', 'error');
       doLogout();
     }
     return data;
+
   } catch (e) {
-    // Detailed diagnosis for common failure modes
-    let hint = '';
-    if (e.message.includes('fetch')) hint = ' — Check that your Apps Script is deployed with access set to "Anyone".';
-    if (location.protocol === 'file:')  hint = ' — Camera and POST requests require HTTPS. Host this file on Netlify or GitHub Pages.';
-    toast('Upload error: ' + e.message + hint, 'error');
+    console.error('apiPost error:', e);
+    let msg = 'Network error: ' + e.message;
+    if (location.protocol === 'file:') {
+      msg = 'Batch upload requires HTTPS — you cannot use file://. '
+          + 'Host index.html on Netlify (drag-drop at netlify.com/drop) or GitHub Pages.';
+    } else if (e.name === 'TypeError') {
+      msg = 'Could not reach the Apps Script. Check: (1) API_URL is set, '
+          + '(2) Apps Script is deployed with access = "Anyone", '
+          + '(3) you redeployed after updating Code.gs.';
+    }
+    toast(msg, 'error', 7000);
     return { success: false, error: e.message };
   }
 }
