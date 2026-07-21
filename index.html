@@ -1529,6 +1529,137 @@ body {
   .tutorial-step { flex-direction: column; gap: 10px; }
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   PAGINATION & SORT
+═══════════════════════════════════════════════════════ */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pagination-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0 8px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-family: var(--font-body);
+}
+
+.page-btn:hover:not(:disabled) {
+  background: var(--border2);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.page-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(79,142,247,0.4);
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 32px;
+  color: var(--text-muted); font-size: 13px;
+}
+
+.page-size-select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Sortable column headers */
+.data-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.data-table th.sortable:hover {
+  color: var(--accent);
+  background: rgba(79,142,247,0.07);
+}
+
+.data-table th.sortable.sort-asc,
+.data-table th.sortable.sort-desc {
+  color: var(--accent);
+  background: rgba(79,142,247,0.08);
+}
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 10px;
+  opacity: 0.4;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+
+th.sortable:hover .sort-icon,
+th.sort-asc .sort-icon,
+th.sort-desc .sort-icon {
+  opacity: 1;
+}
+
+/* Category group header row */
+.group-header-row td {
+  background: var(--surface2) !important;
+  padding: 6px 16px !important;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Mobile pagination */
+@media (max-width: 600px) {
+  .pagination-bar { padding: 10px 12px; }
+  .page-btn { min-width: 34px; height: 34px; font-size: 13px; }
+  .pagination-info { font-size: 11px; }
+}
+
 </style>
 </head>
 <body>
@@ -1959,6 +2090,16 @@ const state = {
   inventory:   [],          // full inventory cache
   scannedItems:{},          // items loaded via QR scan (keyed by id)
   currentPage: 'dashboard',
+
+  // Inventory list state
+  inv: {
+    filtered:  [],          // current filtered+sorted item list
+    page:      1,           // current page (1-based)
+    pageSize:  15,          // rows per page
+    sortCol:   'category',  // default sort column
+    sortDir:   'asc',       // 'asc' | 'desc'
+    groupBy:   true,        // group rows by category when sorted by category
+  },
 };
 
 // ── INIT ───────────────────────────────────────────────
@@ -2288,125 +2429,340 @@ async function renderInventory() {
   document.getElementById('topbarActions').innerHTML = canAdd
     ? `<button class="btn btn-primary btn-sm" data-tooltip="Add a new inventory item" onclick="openItemForm()">＋ Add Item</button>` : '';
 
+  // Reset to page 1 on fresh load
+  state.inv.page = 1;
+
   content.innerHTML = `
     <div class="table-wrap fade-up">
       <div class="table-header">
         <h3>All Items</h3>
-        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0">
+        <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;min-width:0;align-items:center">
           <div class="search-box" style="flex:1;min-width:140px">
             🔍 <input type="text" id="searchInput" placeholder="Search…" oninput="filterInventory()">
           </div>
+          <!-- Category filter -->
           <select id="filterCat" onchange="filterInventory()"
-            style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;min-width:120px">
-            <option value="">All</option>
-            <option value="Fixed Asset">Fixed Asset</option>
-            <option value="Semi-Asset">Semi-Asset</option>
+            style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;min-width:130px">
+            <option value="">All Categories</option>
+            <option value="Fixed Asset">🏷️ Fixed Asset</option>
+            <option value="Semi-Asset">📌 Semi-Asset</option>
+          </select>
+          <!-- Sort control -->
+          <select id="sortCol" onchange="setSortCol(this.value)"
+            style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:13px;outline:none;min-width:140px">
+            <option value="category"   ${state.inv.sortCol==='category'   ?'selected':''}>Sort: Category</option>
+            <option value="type"       ${state.inv.sortCol==='type'       ?'selected':''}>Sort: Type</option>
+            <option value="unitValue"  ${state.inv.sortCol==='unitValue'  ?'selected':''}>Sort: Unit Value</option>
+            <option value="location"   ${state.inv.sortCol==='location'   ?'selected':''}>Sort: Location</option>
+            <option value="endUser"    ${state.inv.sortCol==='endUser'    ?'selected':''}>Sort: End User</option>
+            <option value="dateCreated"${state.inv.sortCol==='dateCreated'?'selected':''}>Sort: Date Added</option>
+          </select>
+          <!-- Sort direction toggle -->
+          <button class="btn btn-ghost btn-sm" id="sortDirBtn"
+            onclick="toggleSortDir()"
+            data-tooltip="Toggle sort direction"
+            style="min-width:38px;padding:7px 10px;font-size:14px">
+            ${state.inv.sortDir === 'asc' ? '↑' : '↓'}
+          </button>
+          <!-- Page size -->
+          <select class="page-size-select" id="pageSizeSelect" onchange="setPageSize(this.value)"
+            data-tooltip="Items per page">
+            <option value="10"  ${state.inv.pageSize===10  ?'selected':''}>10 / page</option>
+            <option value="15"  ${state.inv.pageSize===15  ?'selected':''}>15 / page</option>
+            <option value="25"  ${state.inv.pageSize===25  ?'selected':''}>25 / page</option>
+            <option value="50"  ${state.inv.pageSize===50  ?'selected':''}>50 / page</option>
+            <option value="100" ${state.inv.pageSize===100 ?'selected':''}>100 / page</option>
           </select>
         </div>
       </div>
-      <div id="inventoryTable"><div style="padding:40px;text-align:center"><span class="loader"></span></div></div>
+      <div id="inventoryTable">
+        <div style="padding:40px;text-align:center"><span class="loader"></span></div>
+      </div>
     </div>`;
 
   const res = await api({ action: 'listItems' });
+  if (!res.success) {
+    document.getElementById('inventoryTable').innerHTML =
+      '<div class="empty-state"><span class="icon">❌</span><h3>Failed to load inventory</h3></div>';
+    return;
+  }
   state.inventory = res.items || [];
-  renderInventoryTable(state.inventory);
+  filterInventory();   // applies sort + filter + pagination
 }
 
+// ── Sort helpers ───────────────────────────────────────
+function setSortCol(col) {
+  state.inv.sortCol  = col;
+  state.inv.groupBy  = (col === 'category');
+  state.inv.page     = 1;
+  updateSortDirBtn();
+  filterInventory();
+}
+
+function toggleSortDir() {
+  state.inv.sortDir = state.inv.sortDir === 'asc' ? 'desc' : 'asc';
+  state.inv.page    = 1;
+  updateSortDirBtn();
+  filterInventory();
+}
+
+function setPageSize(size) {
+  state.inv.pageSize = parseInt(size);
+  state.inv.page     = 1;
+  filterInventory();
+}
+
+function goToPage(p) {
+  const total = Math.ceil(state.inv.filtered.length / state.inv.pageSize);
+  state.inv.page = Math.max(1, Math.min(p, total));
+  renderInventoryTable();
+  // Scroll table into view on mobile
+  const el = document.getElementById('inventoryTable');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateSortDirBtn() {
+  const btn = document.getElementById('sortDirBtn');
+  if (btn) btn.textContent = state.inv.sortDir === 'asc' ? '↑' : '↓';
+}
+
+// ── Filter → sort → store → render ────────────────────
 function filterInventory() {
   const q   = (document.getElementById('searchInput')?.value || '').toLowerCase();
   const cat = document.getElementById('filterCat')?.value || '';
-  const filtered = state.inventory.filter(it => {
-    const text = [it.description, it.type, it.propertyNumber, it.location, it.endUser, it.mr]
+
+  // 1. Filter
+  let filtered = state.inventory.filter(it => {
+    const text = [it.description, it.type, it.serialNumber, it.propertyNumber,
+                  it.location, it.endUser, it.mr, it.remarks]
       .join(' ').toLowerCase();
     return (!q || text.includes(q)) && (!cat || it.category === cat);
   });
-  renderInventoryTable(filtered);
+
+  // 2. Sort
+  const col = state.inv.sortCol;
+  const dir = state.inv.sortDir === 'asc' ? 1 : -1;
+
+  filtered.sort((a, b) => {
+    let va = a[col] ?? '';
+    let vb = b[col] ?? '';
+
+    // Numeric sort for unit value
+    if (col === 'unitValue') {
+      return (parseFloat(va) - parseFloat(vb)) * dir;
+    }
+    // Date sort
+    if (col === 'dateCreated' || col === 'dateUpdated') {
+      return (new Date(va) - new Date(vb)) * dir;
+    }
+    // String sort (case-insensitive)
+    return String(va).toLowerCase().localeCompare(String(vb).toLowerCase()) * dir;
+  });
+
+  // 3. Store filtered+sorted list and reset page if needed
+  const totalPages = Math.ceil(filtered.length / state.inv.pageSize) || 1;
+  if (state.inv.page > totalPages) state.inv.page = 1;
+  state.inv.filtered = filtered;
+
+  renderInventoryTable();
 }
 
-function renderInventoryTable(items) {
-  document.getElementById('inventoryTable').innerHTML = buildItemTable(items, false);
+function renderInventoryTable() {
+  const el = document.getElementById('inventoryTable');
+  if (!el) return;
+  el.innerHTML = buildItemTable(state.inv.filtered, false);
 }
 
-function buildItemTable(items, compact) {
-  if (!items.length) return `<div class="empty-state"><span class="icon">📭</span><h3>No items found</h3></div>`;
+function buildItemTable(allItems, compact) {
+  // ── Paginate from state ──────────────────────────────
+  const ps        = state.inv.pageSize;
+  const page      = state.inv.page;
+  const total     = allItems.length;
+  const totalPages= Math.ceil(total / ps) || 1;
+  const start     = (page - 1) * ps;
+  const items     = allItems.slice(start, start + ps);
 
   const canEdit   = ['super_admin', 'authorized'].includes(state.user.role);
   const canDelete = state.user.role === 'super_admin';
   const isMobile  = window.innerWidth <= 600;
+  const col       = state.inv.sortCol;
+  const dir       = state.inv.sortDir;
 
-  // ── Mobile: card layout ─────────────────────────────
-  if (isMobile) {
-    return `<ul class="inv-card-list" style="padding:12px">
-      ${items.map(it => `
-        <li class="inv-card">
-          <div class="inv-card-top">
-            <div class="inv-card-icon">${it.category === 'Fixed Asset' ? '🏷️' : '📌'}</div>
-            <div class="inv-card-info">
-              <div class="inv-card-type">${esc(it.type)}</div>
-              <div class="inv-card-desc">${esc(it.description)}</div>
-            </div>
-          </div>
-          <div class="inv-card-meta">
-            <span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span>
-            <span class="inv-card-val ${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
-            ${it.serialNumber  ? `<span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">S/N: ${esc(it.serialNumber)}</span>`  : ''}
-            ${it.location ? `<span style="font-size:11px;color:var(--text-muted)">📍 ${esc(it.location)}</span>` : ''}
-            ${it.endUser  ? `<span style="font-size:11px;color:var(--text-muted)">👤 ${esc(it.endUser)}</span>`  : ''}
-          </div>
-          <div class="inv-card-bottom">
-            <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁 View</button>
-            <button class="btn btn-ghost btn-sm" onclick="showQR('${it.id}','${esc(it.description)}')">⬛ QR</button>
-            <button class="btn btn-success btn-sm" onclick="addToCart('${it.id}')">＋ List</button>
-            ${canEdit   ? `<button class="btn btn-ghost btn-sm" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
-            ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
-          </div>
-        </li>`).join('')}
-    </ul>`;
+  // ── Helper: sort icon for a column ──────────────────
+  function sortIcon(c) {
+    if (col !== c) return `<span class="sort-icon">⇅</span>`;
+    return `<span class="sort-icon">${dir === 'asc' ? '↑' : '↓'}</span>`;
+  }
+  function thClass(c) {
+    return `class="sortable${col===c?' sort-'+dir:''}"`;
+  }
+  function thClick(c) {
+    return `onclick="col==='${c}'?toggleSortDir():setSortCol('${c}')"`.replace('col',`state.inv.sortCol`);
   }
 
-  // ── Desktop: table layout ───────────────────────────
+  // ── Pagination bar builder ───────────────────────────
+  function buildPaginationBar() {
+    const from = total === 0 ? 0 : start + 1;
+    const to   = Math.min(start + ps, total);
+
+    // Page numbers with ellipsis
+    function pageButtons() {
+      const btns = [];
+      const range = (lo, hi) => { for (let i=lo;i<=hi;i++) btns.push(i); };
+
+      if (totalPages <= 7) {
+        range(1, totalPages);
+      } else if (page <= 4) {
+        range(1, 5); btns.push('…'); btns.push(totalPages);
+      } else if (page >= totalPages - 3) {
+        btns.push(1); btns.push('…'); range(totalPages - 4, totalPages);
+      } else {
+        btns.push(1); btns.push('…');
+        range(page - 1, page + 1);
+        btns.push('…'); btns.push(totalPages);
+      }
+
+      return btns.map(b => b === '…'
+        ? `<span class="page-ellipsis">…</span>`
+        : `<button class="page-btn${b===page?' active':''}"
+             onclick="goToPage(${b})"
+             ${b===page?'aria-current="page"':''}>${b}</button>`
+      ).join('');
+    }
+
+    return `
+      <div class="pagination-bar">
+        <span class="pagination-info">
+          Showing <strong>${from}–${to}</strong> of <strong>${total}</strong> item${total!==1?'s':''}
+        </span>
+        <div class="pagination-controls">
+          <button class="page-btn" onclick="goToPage(1)"       data-tooltip="First page"    ${page===1?'disabled':''}>«</button>
+          <button class="page-btn" onclick="goToPage(${page-1})" data-tooltip="Previous page" ${page===1?'disabled':''}>‹</button>
+          ${pageButtons()}
+          <button class="page-btn" onclick="goToPage(${page+1})" data-tooltip="Next page"     ${page===totalPages?'disabled':''}>›</button>
+          <button class="page-btn" onclick="goToPage(${totalPages})" data-tooltip="Last page" ${page===totalPages?'disabled':''}>»</button>
+        </div>
+      </div>`;
+  }
+
+  if (total === 0) {
+    return `<div class="empty-state"><span class="icon">📭</span><h3>No items found</h3>
+      <p style="color:var(--text-muted)">Try a different search or filter.</p></div>`;
+  }
+
+  // ── MOBILE: card layout with pagination ─────────────
+  if (isMobile && !compact) {
+    // Group cards by category when sorting by category
+    const grouped = state.inv.groupBy && col === 'category';
+    let cardHtml  = '';
+
+    if (grouped) {
+      const groups = {};
+      items.forEach(it => {
+        const g = it.category || 'Uncategorised';
+        if (!groups[g]) groups[g] = [];
+        groups[g].push(it);
+      });
+      Object.entries(groups).forEach(([grp, grpItems]) => {
+        cardHtml += `<li style="padding:8px 12px 2px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted)">${grp} (${grpItems.length})</li>`;
+        grpItems.forEach(it => { cardHtml += buildCard(it, canEdit, canDelete); });
+      });
+    } else {
+      items.forEach(it => { cardHtml += buildCard(it, canEdit, canDelete); });
+    }
+
+    return `<ul class="inv-card-list" style="padding:12px">${cardHtml}</ul>
+      ${buildPaginationBar()}`;
+  }
+
+  // ── DESKTOP: sortable table with pagination ──────────
+  // Category grouping rows
+  const grouped = state.inv.groupBy && col === 'category' && !compact;
+  let bodyHtml  = '';
+  let lastCat   = null;
+
+  items.forEach(it => {
+    if (grouped && it.category !== lastCat) {
+      lastCat = it.category;
+      const count = allItems.filter(x => x.category === lastCat).length;
+      const icon  = lastCat === 'Fixed Asset' ? '🏷️' : '📌';
+      const colSpan = compact ? 7 : 10;
+      bodyHtml += `<tr class="group-header-row">
+        <td colspan="${colSpan}">${icon} ${esc(lastCat)} &nbsp;·&nbsp; ${count} item${count!==1?'s':''}</td>
+      </tr>`;
+    }
+
+    bodyHtml += `<tr>
+      ${!compact ? `<td class="col-id">${it.id.slice(-10)}</td>` : ''}
+      <td><strong style="color:var(--text)">${esc(it.type)}</strong></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          title="${esc(it.description)}">${esc(it.description)}</td>
+      ${!compact ? `<td class="col-id">${esc(it.serialNumber)}</td>` : ''}
+      ${!compact ? `<td>${esc(it.propertyNumber)}</td>` : ''}
+      <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span></td>
+      <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</td>
+      <td>${esc(it.location)}</td>
+      <td>${esc(it.endUser)}</td>
+      ${!compact ? `<td>
+        <div class="action-btns">
+          <button class="btn btn-ghost btn-sm" data-tooltip="View full item details" onclick="viewItem('${it.id}')">👁</button>
+          <button class="btn btn-ghost btn-sm" data-tooltip="View &amp; print QR code" onclick="showQR('${it.id}','${esc(it.description)}')">⬛</button>
+          <button class="btn btn-success btn-sm" data-tooltip="Add to my selected list" onclick="addToCart('${it.id}')">＋ List</button>
+          ${canEdit   ? `<button class="btn btn-ghost btn-sm" data-tooltip="Edit this item" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
+          ${canDelete ? `<button class="btn btn-danger btn-sm" data-tooltip="Delete this item" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
+        </div>
+      </td>` : ''}
+    </tr>`;
+  });
+
   return `
     <div style="overflow-x:auto">
     <table class="data-table">
       <thead>
         <tr>
           ${!compact ? '<th>ID</th>' : ''}
-          <th>Type</th>
+          <th ${thClass('type')}     ${thClick('type')}     >Type${sortIcon('type')}</th>
           <th>Description</th>
-          ${!compact ? '<th>Serial #</th>' : ''}
-          ${!compact ? '<th>Property #</th>' : ''}
-          <th>Category</th>
-          <th>Unit Value</th>
-          <th>Location</th>
-          <th>End User</th>
-          <th>Actions</th>
+          ${!compact ? `<th>Serial #</th>` : ''}
+          ${!compact ? `<th>Property #</th>` : ''}
+          <th ${thClass('category')} ${thClick('category')} >Category${sortIcon('category')}</th>
+          <th ${thClass('unitValue')} ${thClick('unitValue')}>Unit Value${sortIcon('unitValue')}</th>
+          <th ${thClass('location')} ${thClick('location')} >Location${sortIcon('location')}</th>
+          <th ${thClass('endUser')}  ${thClick('endUser')}  >End User${sortIcon('endUser')}</th>
+          ${!compact ? '<th>Actions</th>' : ''}
         </tr>
       </thead>
-      <tbody>
-        ${items.map(it => `
-          <tr>
-            ${!compact ? `<td class="col-id">${it.id.slice(-10)}</td>` : ''}
-            <td><strong style="color:var(--text)">${esc(it.type)}</strong></td>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.description)}</td>
-            ${!compact ? `<td class="col-id">${esc(it.serialNumber)}</td>` : ''}
-            ${!compact ? `<td>${esc(it.propertyNumber)}</td>` : ''}
-            <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span></td>
-            <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</td>
-            <td>${esc(it.location)}</td>
-            <td>${esc(it.endUser)}</td>
-            <td>
-              <div class="action-btns">
-                <button class="btn btn-ghost btn-sm" data-tooltip="View full item details" onclick="viewItem('${it.id}')">👁</button>
-                <button class="btn btn-ghost btn-sm" data-tooltip="View &amp; print QR code" onclick="showQR('${it.id}','${esc(it.description)}')">⬛</button>
-                <button class="btn btn-success btn-sm" data-tooltip="Add to my selected list" onclick="addToCart('${it.id}')">＋ List</button>
-                ${canEdit   ? `<button class="btn btn-ghost btn-sm" data-tooltip="Edit this item" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
-                ${canDelete ? `<button class="btn btn-danger btn-sm" data-tooltip="Permanently delete this item" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
-              </div>
-            </td>
-          </tr>`).join('')}
-      </tbody>
+      <tbody>${bodyHtml}</tbody>
     </table>
-    </div>`;
+    </div>
+    ${!compact ? buildPaginationBar() : ''}`;
+}
+
+// ── Build a single mobile inventory card ──────────────
+function buildCard(it, canEdit, canDelete) {
+  return `<li class="inv-card">
+    <div class="inv-card-top">
+      <div class="inv-card-icon">${it.category === 'Fixed Asset' ? '🏷️' : '📌'}</div>
+      <div class="inv-card-info">
+        <div class="inv-card-type">${esc(it.type)}</div>
+        <div class="inv-card-desc">${esc(it.description)}</div>
+      </div>
+    </div>
+    <div class="inv-card-meta">
+      <span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}">${it.category}</span>
+      <span class="inv-card-val ${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
+      ${it.serialNumber ? `<span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">S/N: ${esc(it.serialNumber)}</span>` : ''}
+      ${it.location ? `<span style="font-size:11px;color:var(--text-muted)">📍 ${esc(it.location)}</span>` : ''}
+      ${it.endUser  ? `<span style="font-size:11px;color:var(--text-muted)">👤 ${esc(it.endUser)}</span>`  : ''}
+    </div>
+    <div class="inv-card-bottom">
+      <button class="btn btn-ghost btn-sm" onclick="viewItem('${it.id}')">👁 View</button>
+      <button class="btn btn-ghost btn-sm" onclick="showQR('${it.id}','${esc(it.description)}')">⬛ QR</button>
+      <button class="btn btn-success btn-sm" onclick="addToCart('${it.id}')">＋ List</button>
+      ${canEdit   ? `<button class="btn btn-ghost btn-sm" onclick="openItemForm('${it.id}')">✏️</button>` : ''}
+      ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteItemConfirm('${it.id}')">🗑</button>` : ''}
+    </div>
+  </li>`;
 }
 
 // ── ITEM FORM ──────────────────────────────────────────
