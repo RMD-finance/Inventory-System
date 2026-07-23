@@ -1780,6 +1780,81 @@ th.sort-desc .sort-icon {
   .pagination-info { font-size: 11px; }
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   PERSISTENT SCAN LIST
+═══════════════════════════════════════════════════════ */
+
+/* Expiry countdown badge */
+.expiry-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 7px; border-radius: 999px;
+  white-space: nowrap;
+}
+.expiry-ok     { background: rgba(52,211,153,0.12); color: var(--green); }
+.expiry-soon   { background: rgba(240,180,41,0.15); color: var(--gold);  }
+.expiry-urgent { background: rgba(248,113,113,0.15); color: var(--red);  }
+
+/* Sync status pill in topbar */
+.sync-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-muted);
+  padding: 4px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.sync-pill .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+.sync-pill .dot.syncing {
+  background: var(--gold);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* Cart item scan date */
+.cart-item-scan-date {
+  font-size: 10px; color: var(--text-muted); margin-top: 3px;
+}
+
+/* ── Print styles for scanned list ── */
+@media print {
+  .no-print { display: none !important; }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #1A73E8;
+  }
+
+  .print-header h1 {
+    font-size: 20px; font-weight: 800; color: #1A73E8; margin-bottom: 4px;
+  }
+
+  .print-header .print-meta {
+    font-size: 11px; color: #555;
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+
+  .print-footer {
+    display: block !important;
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    font-size: 10px; color: #888;
+    text-align: center;
+  }
+
+  table th { background: #1A73E8 !important; color: white !important; -webkit-print-color-adjust: exact; }
+  table tr:nth-child(even) td { background: #f5f7ff !important; -webkit-print-color-adjust: exact; }
+}
+
+/* Hidden by default, shown only on print */
+.print-header, .print-footer { display: none; }
+
 </style>
 </head>
 <body>
@@ -2218,6 +2293,10 @@ const state = {
   scannedItems:{},          // items loaded via QR scan (keyed by id)
   currentPage: 'dashboard',
 
+  // Persistent scan list (synced with server)
+  scanList:    [],   // [{id, itemId, scannedAt, expiresAt, item}]
+  scanSyncing: false,
+
   // Inventory list state
   inv: {
     filtered:  [],          // current filtered+sorted item list
@@ -2430,8 +2509,13 @@ async function doLogin() {
 
 function doLogout() {
   api({ action: 'logout' });
-  state.user  = null; state.token = null; state.cart = [];
+  state.user      = null;
+  state.token     = null;
+  state.cart      = [];      // local ephemeral cart
+  state.scanList  = [];      // clear local copy (server keeps it)
+  state.inventory = [];
   sessionStorage.removeItem('inv_session');
+  updateCartBadge();
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appShell').style.display    = 'none';
 }
@@ -2450,6 +2534,9 @@ function showApp() {
   document.getElementById('adminNavSection').style.display = u.role === 'super_admin' ? '' : 'none';
 
   navigate('dashboard');
+
+  // Load persisted scan list from server in the background
+  loadScanList();
 }
 
 function roleLabel(r) {
@@ -3216,96 +3303,289 @@ function printQR() {
 // ── CART ───────────────────────────────────────────────
 // Cart stores item IDs. Items are looked up from inventory cache
 // OR from scannedItems (populated via QR scan without full inventory load).
-function resolveCartItems() {
-  return state.cart.map(id => {
-    return state.inventory.find(i => i.id === id) ||
-           (state.scannedItems && state.scannedItems[id]) ||
-           null;
-  }).filter(Boolean);
-}
+// ── PERSISTENT SCAN LIST ──────────────────────────────────────
+// state.scanList = [{id, itemId, scannedAt, expiresAt, item}]
+// Synced with the server's ScanList sheet.
 
-function addToCart(id) {
-  if (state.cart.includes(id)) { toast('Item already in list.', 'info'); return; }
-  state.cart.push(id);
-  updateCartBadge();
-  toast('Added to list!', 'success');
-}
+/**
+ * Load scan list from server on login.
+ * Merges server entries with any locally-cached inventory data.
+ */
+async function loadScanList() {
+  if (!state.user) return;
+  setSyncing(true);
+  const res = await api({ action: 'getScanList' });
+  setSyncing(false);
+  if (!res.success) return;
 
-function removeFromCart(id) {
-  state.cart = state.cart.filter(i => i !== id);
+  state.scanList = res.items || [];
+
+  // Re-hydrate item snapshots into scannedItems cache
+  state.scanList.forEach(entry => {
+    if (entry.item && entry.itemId) {
+      if (!state.scannedItems) state.scannedItems = {};
+      state.scannedItems[entry.itemId] = entry.item;
+    }
+  });
+
   updateCartBadge();
   if (state.currentPage === 'cart') renderCart();
 }
 
+/**
+ * Add an item to the persistent scan list.
+ * Optimistic UI: update locally first, then sync to server.
+ */
+async function addToScanList(id, itemSnapshot) {
+  if (!state.user) {
+    toast('Please log in to save items to your list.', 'info');
+    return false;
+  }
+
+  // Already in list?
+  if (state.scanList.some(e => e.itemId === id)) {
+    toast('Already in your list.', 'info');
+    return false;
+  }
+
+  // Optimistic local update
+  const now       = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 86400000).toISOString();
+  const entry = { id: 'local-' + Date.now(), itemId: id, scannedAt: now, expiresAt, item: itemSnapshot || {} };
+  state.scanList.push(entry);
+  if (itemSnapshot) {
+    if (!state.scannedItems) state.scannedItems = {};
+    state.scannedItems[id] = itemSnapshot;
+  }
+  updateCartBadge();
+
+  // Sync to server
+  setSyncing(true);
+  const res = await api({
+    action:   'addToScanList',
+    itemId:   id,
+    itemSnapshot: JSON.stringify(itemSnapshot || {}),
+  });
+  setSyncing(false);
+
+  if (res.success) {
+    // Update local entry with server-assigned id and expiry
+    const idx = state.scanList.findIndex(e => e.itemId === id);
+    if (idx >= 0) {
+      state.scanList[idx].id        = res.id || state.scanList[idx].id;
+      state.scanList[idx].expiresAt = res.expiresAt || expiresAt;
+    }
+    toast('Saved to your list! ✅', 'success');
+    return true;
+  } else {
+    // Roll back on failure
+    state.scanList = state.scanList.filter(e => e.itemId !== id);
+    updateCartBadge();
+    toast('Could not save to list: ' + (res.error || 'Unknown error'), 'error');
+    return false;
+  }
+}
+
+/**
+ * Remove an item from the persistent scan list.
+ */
+async function removeFromScanList(itemId) {
+  // Optimistic removal
+  state.scanList = state.scanList.filter(e => e.itemId !== itemId);
+  updateCartBadge();
+  if (state.currentPage === 'cart') renderCart();
+
+  setSyncing(true);
+  await api({ action: 'removeFromScanList', itemId });
+  setSyncing(false);
+}
+
+/**
+ * Clear the entire scan list for the current user.
+ */
+async function clearScanListAll() {
+  state.scanList = [];
+  updateCartBadge();
+  renderCart();
+
+  setSyncing(true);
+  await api({ action: 'clearScanList' });
+  setSyncing(false);
+}
+
+/**
+ * Sync indicator helper.
+ */
+function setSyncing(on) {
+  state.scanSyncing = on;
+  const dot = document.querySelector('.sync-pill .dot');
+  if (dot) dot.classList.toggle('syncing', on);
+}
+
+// ── Legacy helpers kept for compatibility ──────────────────
+
+function resolveCartItems() {
+  // For the persistent scan list, items come with their snapshot
+  return state.scanList
+    .map(entry => entry.item && entry.item.id ? entry.item : (
+      state.inventory.find(i => i.id === entry.itemId) ||
+      (state.scannedItems && state.scannedItems[entry.itemId]) ||
+      null
+    ))
+    .filter(Boolean);
+}
+
+// addToCart now routes to addToScanList
+function addToCart(id) {
+  const snapshot = state.inventory.find(i => i.id === id)
+                || (state.scannedItems && state.scannedItems[id])
+                || null;
+  addToScanList(id, snapshot);
+}
+
+function removeFromCart(id) {
+  removeFromScanList(id);
+}
+
 function updateCartBadge() {
-  const n = state.cart.length;
-  // Sidebar badge
-  const badge = document.getElementById('cartBadge');
-  if (badge) { badge.textContent = n; badge.style.display = n > 0 ? 'flex' : 'none'; }
-  // Bottom nav badge
+  const n = state.scanList.length;
+  const badge     = document.getElementById('cartBadge');
   const bnavBadge = document.getElementById('bnavCartBadge');
+  if (badge)     { badge.textContent = n;     badge.style.display     = n > 0 ? 'flex' : 'none'; }
   if (bnavBadge) { bnavBadge.textContent = n; bnavBadge.style.display = n > 0 ? 'flex' : 'none'; }
 }
 
 function renderCart() {
   const content = document.getElementById('pageContent');
-  if (!state.cart.length) {
+
+  if (!state.scanList.length) {
     document.getElementById('topbarActions').innerHTML = '';
-    content.innerHTML = `<div class="empty-state"><span class="icon">🛒</span><h3>Your list is empty</h3>
-      <p style="margin-bottom:20px">Scan a QR code or add items from the inventory.</p>
-      <button class="btn btn-primary" onclick="navigate('inventory')">Browse Inventory</button></div>`;
+    content.innerHTML = `
+      <div class="empty-state">
+        <span class="icon">🛒</span>
+        <h3>Your list is empty</h3>
+        <p style="margin-bottom:20px;color:var(--text-muted)">
+          Scan QR codes or add items from the inventory.<br>
+          Items are saved to your account and available on any device.
+        </p>
+        <button class="btn btn-primary" onclick="navigate('inventory')">Browse Inventory</button>
+      </div>`;
     return;
   }
 
-  const items = resolveCartItems();
+  const now = new Date();
 
-  // If some items aren't cached yet, fetch inventory first
-  if (items.length < state.cart.length && state.inventory.length === 0) {
-    content.innerHTML = '<div style="padding:40px;text-align:center"><span class="loader"></span><p style="margin-top:12px;color:var(--text-muted)">Loading items…</p></div>';
-    api({ action: 'listItems' }).then(res => {
-      if (res.success) { state.inventory = res.items || []; }
-      renderCart();
-    });
-    return;
+  // Build expiry badge
+  function expiryBadge(expiresAt) {
+    const exp      = new Date(expiresAt);
+    const daysLeft = Math.ceil((exp - now) / 86400000);
+    if (daysLeft <= 1) return `<span class="expiry-badge expiry-urgent">⚠ Expires today</span>`;
+    if (daysLeft <= 2) return `<span class="expiry-badge expiry-soon">⏳ ${daysLeft}d left</span>`;
+    return `<span class="expiry-badge expiry-ok">✓ ${daysLeft}d left</span>`;
   }
 
-  document.getElementById('topbarActions').innerHTML =
-    `<button class="btn btn-gold" data-tooltip="Export selected items as PDF" onclick="exportCartPDF()">📄 Export PDF</button>
-     <button class="btn btn-ghost" data-tooltip="Print your selected items list" onclick="printCart()">🖨 Print</button>
-     <button class="btn btn-danger btn-sm" data-tooltip="Remove all items from your list" onclick="clearCart()">Clear All</button>`;
+  document.getElementById('topbarActions').innerHTML = `
+    <span class="sync-pill no-print">
+      <span class="dot${state.scanSyncing?' syncing':''}"></span>
+      ${state.scanSyncing ? 'Syncing…' : 'Synced'}
+    </span>
+    <button class="btn btn-gold no-print" data-tooltip="Export as PDF" onclick="exportCartPDF()">📄 PDF</button>
+    <button class="btn btn-ghost no-print" data-tooltip="Print list" onclick="printCart()">🖨 Print</button>
+    <button class="btn btn-danger btn-sm no-print" data-tooltip="Remove all items" onclick="clearScanListAll()">Clear All</button>`;
+
+  // Hidden print header (visible only when printing)
+  const printedAt = new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' });
+  const userName  = state.user ? (state.user.fullName || state.user.username) : '—';
+
+  const printHeader = `
+    <div class="print-header">
+      <h1>📦 InvTrack — Scanned Items List</h1>
+      <div class="print-meta">
+        <span><strong>Prepared by:</strong> ${esc(userName)}</span>
+        <span><strong>Printed on:</strong> ${printedAt}</span>
+        <span><strong>Total items:</strong> ${state.scanList.length}</span>
+      </div>
+    </div>`;
+
+  const printFooter = `
+    <div class="print-footer">
+      InvTrack Inventory Management System &nbsp;·&nbsp; Printed by ${esc(userName)} &nbsp;·&nbsp; ${printedAt}
+    </div>`;
 
   content.innerHTML = `
+    ${printHeader}
     <div class="table-wrap fade-up">
-      <div class="table-header">
-        <h3>Selected Items (${items.length})</h3>
+      <div class="table-header no-print">
+        <div>
+          <h3>My Scanned Items</h3>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:2px">
+            ${state.scanList.length} item${state.scanList.length!==1?'s':''} saved to your account &nbsp;·&nbsp;
+            Items auto-expire after 5 days
+          </p>
+        </div>
       </div>
-      <ul class="cart-items" style="padding:0 20px">
-        ${items.map(it => `
-          <li class="cart-item">
-            <div style="flex:1;min-width:0">
-              <div class="cart-item-name">${esc(it.type)} — <span style="font-weight:400;color:var(--text-dim)">${esc(it.description)}</span></div>
-              <div class="cart-item-sub">
-                ${it.serialNumber   ? `<span style="font-family:var(--font-mono)">S/N: ${esc(it.serialNumber)}</span> &nbsp;·&nbsp; ` : ''}
-                ${it.propertyNumber ? `<span style="font-family:var(--font-mono)">PN: ${esc(it.propertyNumber)}</span> &nbsp;·&nbsp; ` : ''}
-                ${esc(it.location) || '—'} &nbsp;·&nbsp;
-                <span class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">₱${fmtNum(it.unitValue)}</span>
-                &nbsp;·&nbsp; <span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}" style="font-size:10px">${esc(it.category)}</span>
-              </div>
-            </div>
-            <div class="action-btns" style="flex-shrink:0">
-              <button class="btn btn-ghost btn-sm" data-tooltip="View item details" onclick="viewItem('${it.id}')">👁</button>
-              <button class="btn btn-danger btn-sm" data-tooltip="Remove from list" onclick="removeFromCart('${it.id}')">✕</button>
-            </div>
-          </li>`).join('')}
-      </ul>
-    </div>`;
+
+      <!-- Desktop table -->
+      <div style="overflow-x:auto">
+        <table class="data-table" id="cartPrintTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Serial #</th>
+              <th>Property #</th>
+              <th>Category</th>
+              <th>Unit Value</th>
+              <th>Location</th>
+              <th>End User</th>
+              <th class="no-print">Scanned</th>
+              <th class="no-print">Expires</th>
+              <th class="no-print">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.scanList.map((entry, idx) => {
+              const it = entry.item && entry.item.id ? entry.item
+                       : state.inventory.find(i => i.id === entry.itemId)
+                       || { type: '—', description: '(item not found)', category: '—',
+                            serialNumber: '', propertyNumber: '', unitValue: 0,
+                            location: '', endUser: '' };
+              return `<tr>
+                <td style="color:var(--text-muted);font-size:12px">${idx + 1}</td>
+                <td><strong style="color:var(--text)">${esc(it.type)}</strong></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                    title="${esc(it.description)}">${esc(it.description)}</td>
+                <td class="col-id">${esc(it.serialNumber)}</td>
+                <td class="col-id">${esc(it.propertyNumber)}</td>
+                <td><span class="badge ${it.category==='Fixed Asset'?'badge-fixed':'badge-semi'}"
+                  style="font-size:10px">${esc(it.category)}</span></td>
+                <td class="${it.category==='Fixed Asset'?'value-fixed':'value-semi'}">
+                  ₱${fmtNum(it.unitValue)}</td>
+                <td>${esc(it.location)}</td>
+                <td>${esc(it.endUser)}</td>
+                <td class="no-print" style="font-size:11px;color:var(--text-muted);white-space:nowrap">
+                  ${fmtDate(entry.scannedAt)}</td>
+                <td class="no-print">${expiryBadge(entry.expiresAt)}</td>
+                <td class="no-print">
+                  <div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" data-tooltip="View item details"
+                      onclick="viewItem('${entry.itemId}')">👁</button>
+                    <button class="btn btn-danger btn-sm" data-tooltip="Remove from list"
+                      onclick="removeFromScanList('${entry.itemId}')">✕</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${printFooter}`;
 }
 
-function clearCart() {
-  state.cart = [];
-  updateCartBadge();
-  renderCart();
-}
+// clearCart kept as alias
+function clearCart() { clearScanListAll(); }
 
 // ── USERS ──────────────────────────────────────────────
 async function renderUsers() {
@@ -3626,25 +3906,40 @@ function exportSinglePDF(id) {
 }
 
 function exportCartPDF() {
-  const items = state.cart.map(id => state.inventory.find(i => i.id === id)).filter(Boolean);
+  const items = resolveCartItems();
   if (!items.length) { toast('Your list is empty.', 'info'); return; }
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape' });
+  const doc       = new jsPDF({ orientation: 'landscape' });
+  const userName  = state.user ? (state.user.fullName || state.user.username) : '—';
+  const printedAt = new Date().toLocaleString('en-PH', { dateStyle: 'long', timeStyle: 'short' });
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
-  doc.text('Selected Inventory Items', 14, 18);
+  // Title
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+  doc.text('InvTrack — Scanned Items List', 14, 14);
+
+  // Meta line
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.setTextColor(100);
+  doc.text(`Prepared by: ${userName}    |    Printed: ${printedAt}    |    Total items: ${items.length}`, 14, 21);
+  doc.setTextColor(0);
 
   doc.autoTable({
     startY: 26,
-    head: [['Type', 'Description', 'Serial #', 'Property #', 'Category', 'Unit Value', 'Location', 'End User']],
-    body: items.map(it => [it.type, it.description, it.serialNumber, it.propertyNumber, it.category,
-      '₱' + fmtNum(it.unitValue), it.location, it.endUser]),
-    styles: { fontSize: 9 },
+    head: [['#', 'Type', 'Description', 'Serial #', 'Property #', 'Category', 'Unit Value', 'Location', 'End User']],
+    body: items.map((it, i) => [
+      i + 1, it.type, it.description, it.serialNumber || '—',
+      it.propertyNumber || '—', it.category,
+      '₱' + fmtNum(it.unitValue), it.location || '—', it.endUser || '—'
+    ]),
+    styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [26, 115, 232] },
+    alternateRowStyles: { fillColor: [240, 244, 255] },
+    foot: [[``, ``, `Prepared by: ${userName}`, '', '', '', '', '', `Printed: ${printedAt}`]],
+    footStyles: { fillColor: [245,245,245], textColor: [120,120,120], fontSize: 7, fontStyle: 'italic' },
   });
 
-  doc.save('selected-items.pdf');
+  doc.save(`scanned-items-${new Date().toISOString().slice(0,10)}.pdf`);
   toast('PDF exported!', 'success');
 }
 
@@ -3668,7 +3963,11 @@ function exportCSV() {
   toast('CSV exported!', 'success');
 }
 
-function printCart() { window.print(); }
+function printCart() {
+  // Print header/footer are always in the DOM (display:none normally).
+  // @media print CSS reveals them and hides .no-print elements.
+  window.print();
+}
 function printDetail() { window.print(); }
 
 // ── QR SCAN DEEP LINK ──────────────────────────────────
@@ -3714,7 +4013,7 @@ function renderScanPage(item) {
 
   const isLoggedIn  = !!state.user;
   const canEdit     = isLoggedIn && ['super_admin', 'authorized'].includes(state.user.role);
-  const isInCart    = state.cart.includes(item.id);
+  const isInCart    = state.scanList.some(e => e.itemId === item.id);
 
   // Icon based on category
   const catIcon = item.category === 'Fixed Asset' ? '🏷️' : '📌';
@@ -3777,21 +4076,34 @@ function renderScanPage(item) {
   }
 }
 
-function scanAddToCart(id) {
-  if (state.cart.includes(id)) { toast('Already in your list.', 'info'); return; }
-  state.cart.push(id);
-  updateCartBadge();
-
-  // Update button state immediately
-  const btn = document.getElementById('scanAddBtn');
-  if (btn) {
-    btn.textContent = '✅ Added to Your List';
-    btn.classList.add('added');
-    btn.disabled = true;
+async function scanAddToCart(id) {
+  if (state.scanList.some(e => e.itemId === id)) {
+    toast('Already in your list.', 'info'); return;
   }
-  document.getElementById('scanAddedNotice').style.display = 'block';
-  document.getElementById('scanGoListBtn').style.display   = 'block';
-  toast('Added to your list! 🎉', 'success');
+
+  // Disable button immediately for feedback
+  const btn = document.getElementById('scanAddBtn');
+  if (btn) { btn.textContent = '⏳ Saving…'; btn.disabled = true; }
+
+  // Get the item snapshot from cache
+  const snapshot = (state.scannedItems && state.scannedItems[id])
+                || state.inventory.find(i => i.id === id)
+                || null;
+
+  const ok = await addToScanList(id, snapshot);
+
+  if (ok) {
+    if (btn) {
+      btn.textContent = '✅ Saved to Your List';
+      btn.classList.add('added');
+      btn.disabled = true;
+    }
+    document.getElementById('scanAddedNotice').style.display = 'block';
+    document.getElementById('scanGoListBtn').style.display   = 'block';
+  } else {
+    // Re-enable if failed
+    if (btn) { btn.textContent = '＋ Add to My List'; btn.disabled = false; }
+  }
 }
 
 function closeScanPage() {
